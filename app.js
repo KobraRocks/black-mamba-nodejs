@@ -8,6 +8,7 @@ import { Controllers } from "./controllers.js";
 import { ApplicationController } from "./controllers/application.js";
 import { Router } from "./router.js";
 import { createCompression } from './libs/compression/index.js';
+import { readCookies } from './libs/cookies/index.js';
 
 async function load_controllers() {
   // Recursively import controllers from './controllers' excluding application.js
@@ -56,6 +57,7 @@ function createRequest(req) {
     url,
     params: {},
     raw: req,
+    cookies: readCookies(req),
     async body() {
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);
