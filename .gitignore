@@ -1,0 +1,11 @@
+# SQLite native build outputs (do not commit)
+libs/sqlite/build/
+**/*.node
+**/*.o
+
+# Node logs and misc
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+
