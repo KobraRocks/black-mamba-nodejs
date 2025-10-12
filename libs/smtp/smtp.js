@@ -1,10 +1,6 @@
 import tls from "tls";
 import crypto from "crypto";
 import { Buffer } from "buffer";
-import { TextDecoder, TextEncoder } from "util";
-
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
 
 class MailerError extends Error {
   constructor(message) {
@@ -77,6 +73,18 @@ function validateResponse(response, expectedCode, errorType) {
   }
 }
 
+function loadEnvConfig(overrides = {}) {
+  const env = process.env || {};
+  const host = overrides.host || env.SMTP_HOST || env.MAIL_HOST || "";
+  const portRaw = overrides.port ?? env.SMTP_PORT ?? env.MAIL_PORT;
+  const port = portRaw ? Number(portRaw) : 465;
+  const username = overrides.username || env.SMTP_USERNAME || env.SMTP_USER || env.MAIL_USER || "";
+  const password = overrides.password || env.SMTP_PASSWORD || env.SMTP_PASS || env.MAIL_PASSWORD || "";
+  if (!host) throw new MailerError("Missing SMTP_HOST in environment");
+  if (!port || Number.isNaN(port)) throw new MailerError("Missing or invalid SMTP_PORT in environment");
+  return { host: String(host).trim(), port, username, password };
+}
+
 async function createConnection(host = "", port = 0) {
   return new Promise((resolve, reject) => {
     const conn = tls.connect(port, host, {}, () => {
@@ -127,13 +135,135 @@ async function authenticate(conn, username = "", password = "") {
   }
 }
 
+function randomBoundary(prefix = 'boundary') {
+  return `${prefix}_${crypto.randomBytes(8).toString('hex')}`;
+}
+
+function bufferFrom(data) {
+  if (Buffer.isBuffer(data)) return data;
+  if (data instanceof Uint8Array) return Buffer.from(data);
+  return Buffer.from(String(data), 'utf8');
+}
+
+function base64Wrap(buf, lineLength = 76) {
+  const b64 = buf.toString('base64');
+  const out = [];
+  for (let i = 0; i < b64.length; i += lineLength) out.push(b64.slice(i, i + lineLength));
+  return out.join('\r\n');
+}
+
+export function buildMessage(message = {}, hostForMessageId = "localhost") {
+  const date = new Date().toUTCString();
+  const messageId = `<${generateUUID()}@${hostForMessageId}>`;
+  const headers = [
+    `From: ${message.from}`,
+    `To: ${message.to}`,
+    `Subject: ${message.subject || ''}`,
+    `Date: ${date}`,
+    `Message-ID: ${messageId}`,
+    "MIME-Version: 1.0",
+  ];
+
+  const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+
+  let body;
+  if (attachments.length > 0) {
+    const mixedBoundary = randomBoundary('mixed');
+    const parts = [];
+    // First part: either alternative or single text/html
+    if (message.text && message.html) {
+      const altBoundary = randomBoundary('alt');
+      parts.push(
+        `--${mixedBoundary}`,
+        `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
+        '',
+        `--${altBoundary}`,
+        'Content-Type: text/plain; charset="utf-8"',
+        '',
+        message.text,
+        '',
+        `--${altBoundary}`,
+        'Content-Type: text/html; charset="utf-8"',
+        '',
+        message.html,
+        '',
+        `--${altBoundary}--`
+      );
+    } else {
+      parts.push(
+        `--${mixedBoundary}`,
+        (message.html
+          ? 'Content-Type: text/html; charset="utf-8"'
+          : 'Content-Type: text/plain; charset="utf-8"'),
+        '',
+        message.html || message.text || ''
+      );
+    }
+    // Attachments
+    for (const att of attachments) {
+      const filename = att.filename || 'attachment';
+      const ct = att.contentType || 'application/octet-stream';
+      const data = bufferFrom(att.content || '');
+      const b64 = base64Wrap(data);
+      parts.push(
+        `--${mixedBoundary}`,
+        `Content-Type: ${ct}; name="${filename}"`,
+        'Content-Transfer-Encoding: base64',
+        `Content-Disposition: attachment; filename="${filename}"`,
+        '',
+        b64
+      );
+    }
+    parts.push(`--${mixedBoundary}--`);
+    body = [
+      `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
+      '',
+      ...parts
+    ].join('\r\n');
+  } else if (message.text && message.html) {
+    const boundary = randomBoundary('alt');
+    body = [
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/plain; charset="utf-8"',
+      '',
+      message.text,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/html; charset="utf-8"',
+      '',
+      message.html,
+      '',
+      `--${boundary}--`,
+    ].join('\r\n');
+  } else {
+    body = [
+      (message.html
+        ? 'Content-Type: text/html; charset="utf-8"'
+        : 'Content-Type: text/plain; charset="utf-8"'),
+      '',
+      message.html || message.text || '',
+    ].join('\r\n');
+  }
+  const content = [...headers, body, "."].join("\r\n");
+  return { headers, body, content };
+}
+
+export function dotStuff(contentWithTerminator) {
+  const lines = String(contentWithTerminator).split('\r\n');
+  const n = lines.length;
+  if (n === 0) return contentWithTerminator;
+  for (let i = 0; i < n; i++) {
+    // Do not stuff the final terminator line which must be exactly '.'
+    const isLast = i === n - 1;
+    if (isLast && lines[i] === '.') continue;
+    if (lines[i].startsWith('.')) lines[i] = '.' + lines[i];
+  }
+  return lines.join('\r\n');
+}
+
 export async function sendMail(
-  config = {
-    host: "",
-    port: 0,
-    username: "",
-    password: "",
-  },
   message = {
     from: "",
     to: "",
@@ -141,8 +271,10 @@ export async function sendMail(
     text: "",
     html: "",
   },
+  overrides = {},
 ) {
-  const conn = await createConnection(config.host.trim(), config.port);
+  const config = loadEnvConfig(overrides);
+  const conn = await createConnection(config.host, config.port);
 
   return new Promise((resolve) => {
     const buffer = [];
@@ -159,7 +291,9 @@ export async function sendMail(
         let response = await sendCommand(conn, `EHLO localhost`);
         validateResponse(response, "250", "EHLO command failed");
 
-        await authenticate(conn, config.username, config.password);
+        if (config.username || config.password) {
+          await authenticate(conn, config.username, config.password);
+        }
 
         response = await sendCommand(conn, `MAIL FROM:<${message.from}>`);
         validateResponse(response, "250", "MAIL FROM command failed");
@@ -170,47 +304,8 @@ export async function sendMail(
         response = await sendCommand(conn, `DATA`);
         validateResponse(response, "354", "DATA command failed");
 
-        const date = new Date().toUTCString();
-        const messageId = `<${generateUUID()}@${config.host}>`;
-
-        const headers = [
-          `From: ${message.from}`,
-          `To: ${message.to}`,
-          `Subject: ${message.subject}`,
-          `Date: ${date}`,
-          `Message-ID: ${messageId}`,
-          "MIME-Version: 1.0",
-        ];
-
-        let body;
-        if (message.text && message.html) {
-          const boundary = "boundary42";
-          body = [
-            'Content-Type: multipart/alternative; boundary="' + boundary + '"',
-            "",
-            "--" + boundary,
-            'Content-Type: text/plain; charset="utf-8"',
-            "",
-            message.text,
-            "",
-            "--" + boundary,
-            'Content-Type: text/html; charset="utf-8"',
-            "",
-            message.html,
-            "",
-            "--" + boundary + "--",
-          ].join("\r\n");
-        } else {
-          body = [
-            message.html
-              ? 'Content-Type: text/html; charset="utf-8"'
-              : 'Content-Type: text/plain; charset="utf-8"',
-            "",
-            message.html || message.text || "",
-          ].join("\r\n");
-        }
-
-        const content = [...headers, body, ".",].join("\r\n");
+        const { content } = buildMessage(message, config.host);
+        const stuffed = dotStuff(content);
 
         // const content = [
         //   `From: ${message.from}`,
@@ -244,7 +339,7 @@ export async function sendMail(
         };
 
         conn.on("data", onFinalResponse);
-        conn.write(content + "\r\n");
+        conn.write(stuffed + "\r\n");
       } catch (error) {
         conn.end();
         resolve({ error });
@@ -252,3 +347,5 @@ export async function sendMail(
     });
   });
 }
+
+export { MailerError, loadEnvConfig };

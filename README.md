@@ -164,6 +164,10 @@ Included Libraries
 - Cookies — RFC6265 parsing/serialization, HMAC signing, CookieJar, HTTP helpers
   - Entry: `libs/cookies/index.js`
   - Test: `node --test libs/cookies/test.mjs`
+- SMTP — minimal TLS SMTP client using env config
+  - Entry: `libs/smtp/index.js`
+  - Env: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`
+  - Test: `node --test libs/smtp/test.mjs`
 - Magic Links — tiny, HMAC‑based, single‑use link tokens
   - Entry: `libs/magick-links/src/index.js`
   - Test: `node --test libs/magick-links/test/*.test.mjs`
@@ -194,6 +198,7 @@ Testing (npm scripts)
 - Individual suites:
   - Compression: `npm run test:compression`
   - Cookies: `npm run test:cookies`
+  - SMTP: `npm run test:smtp`
   - WebAuthn: `npm run test:webauthn`
   - Magic Links: `npm run test:magick-links`
   - SQLite: `npm run test:sqlite`
