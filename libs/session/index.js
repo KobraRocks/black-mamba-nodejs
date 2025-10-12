@@ -10,8 +10,10 @@ function assert(cond, msg) { if (!cond) throw new Error(msg); }
 export function createSession(opts = {}) {
   const {
     name = 'bm.sid',
+    deviceName = 'bm.did',
     secret,
     ttl = 60 * 60 * 24 * 7,
+    deviceTtl = 60 * 60 * 24 * 365, // 1 year
     rolling = true,
     path = '/',
     domain,
@@ -39,19 +41,23 @@ export function createSession(opts = {}) {
 
   async function attach(request, response) {
     const cookies = request.cookies || readCookies({ headers: request.headers || {} });
-    const rawCookie = cookies && cookies[name] || null;
-    let sid = parseCookie(rawCookie);
-    const isAnonymous = !sid; // required by user instruction
+    const rawSessionCookie = cookies && cookies[name] || null;
+    const rawDeviceCookie = cookies && cookies[deviceName] || null;
+    let sid = parseCookie(rawSessionCookie);
+    let did = parseCookie(rawDeviceCookie);
+    const isAnonymous = !rawSessionCookie; // if no session token provided by client
     let isNew = false;
 
     if (!sid) { sid = newId(); isNew = true; }
+    let deviceNew = false;
+    if (!did) { did = newId(); deviceNew = true; }
 
     const now = Date.now();
     const expMs = now + ttl * 1000;
 
     let record = await store.get(sid);
     if (!record || (record.exp && record.exp <= now)) {
-      record = { data: {}, exp: expMs, tmp: {} };
+      record = { data: {}, exp: expMs, tmp: {}, device_id: did };
       await store.set(sid, record);
       isNew = true;
     }
@@ -63,11 +69,14 @@ export function createSession(opts = {}) {
     const api = {
       id: sid,
       isNew,
+      device_id: did,
       is_anonymous: isAnonymous,
       get(key) { return record.data[key]; },
       set(key, val) { record.data[key] = val; },
       unset(key) { delete record.data[key]; },
       all() { return { ...record.data }; },
+      setUser(userId) { record.user_id = userId; },
+      getUserId() { return record.user_id ?? null; },
       flash(key, val) {
         if (arguments.length === 2) {
           const stash = record.data.__flash || (record.data.__flash = {});
@@ -117,9 +126,19 @@ export function createSession(opts = {}) {
         path, domain, secure, sameSite, httpOnly,
         maxAge: ttl, expires: new Date(expMs)
       });
-      // Leverage response.header to set Set-Cookie. If multiple cookies
-      // are needed, higher-level helpers should push arrays.
-      response.header('Set-Cookie', header);
+      // Accumulate multiple cookies on the response object
+      const list = response._setCookies || (response._setCookies = []);
+      list.push(header);
+      response.header('Set-Cookie', list.join(', '));
+      if (deviceNew) {
+        const dval = cookieValue(did);
+        const dHeader = bakeCookie(deviceName, dval, {
+          path, domain, secure, sameSite, httpOnly,
+          maxAge: deviceTtl, expires: new Date(now + deviceTtl * 1000)
+        });
+        list.push(dHeader);
+        response.header('Set-Cookie', list.join(', '));
+      }
     }
     function clearCookie() {
       const header = bakeCookie(name, '', {

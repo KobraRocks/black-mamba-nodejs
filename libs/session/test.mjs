@@ -24,10 +24,14 @@ test('session attach without cookie creates anonymous session and sets cookie on
   await sessionMw.attach(req, res);
   assert.ok(req.session);
   assert.equal(req.session.is_anonymous, true);
+  assert.ok(req.session.device_id);
   req.session.set('uid', 1);
   await req.session.save();
   const setc = res.getHeader('Set-Cookie');
-  assert.ok(typeof setc === 'string' && setc.includes('bm.sid='));
+  const hdr = String(setc);
+  assert.ok(hdr.includes('bm.sid='));
+  // device cookie also set
+  assert.ok(hdr.includes('bm.did='));
 });
 
 test('session persists across requests via cookie and is_anonymous=false', async () => {
@@ -42,10 +46,14 @@ test('session persists across requests via cookie and is_anonymous=false', async
   assert.ok(cookie);
 
   // Next request with cookie
-  const req2 = { headers: { cookie: cookie.split(';')[0] } };
+  // include both sid and did cookies
+  const parts = String(cookie).split(/,\s*/);
+  const c1 = parts[0].split(';')[0];
+  const c2 = (parts[1] || '').split(';')[0];
+  const cookieHeader = c2 ? `${c1}; ${c2}` : c1;
+  const req2 = { headers: { cookie: cookieHeader } };
   const res2 = mockRes();
   await mw.attach(req2, res2);
   assert.equal(req2.session.is_anonymous, false);
   assert.equal(req2.session.get('email'), 'user@example.com');
 });
-
