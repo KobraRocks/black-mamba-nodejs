@@ -1,0 +1,24 @@
+{
+  "compression": {
+    "enabled": true,
+    "threshold": 1024,
+    "prefer": ["br", "gzip", "deflate"],
+    "brotli": { "quality": 4 },
+    "gzip": { "level": 5 },
+    "deflate": { "level": 5 },
+    "skip": {
+      "extensions": [
+        "png", "jpg", "jpeg", "gif", "webp", "avif", "ico",
+        "mp4", "webm", "mov", "m4v",
+        "mp3", "wav", "flac",
+        "zip", "gz", "pdf",
+        "woff", "woff2", "ttf"
+      ],
+      "contentTypes": [
+        "image/*", "video/*", "audio/*",
+        "application/zip", "application/gzip", "application/octet-stream", "application/pdf"
+      ]
+    }
+  }
+}
+
