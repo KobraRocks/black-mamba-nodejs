@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "test:compression": "node libs/compression/test.js",
+    "test:webauthn": "node libs/webauthn/test.js",
+    "test:magick-links": "node --test libs/magick-links/test/*.test.mjs",
+    "test:sqlite": "node --test libs/sqlite/test/*.test.mjs",
+    "test": "npm run -s test:compression && npm run -s test:webauthn && npm run -s test:magick-links && npm run -s test:sqlite"
   }
 }

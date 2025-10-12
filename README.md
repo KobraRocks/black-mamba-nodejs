@@ -186,6 +186,20 @@ Testing Philosophy
 - Run them independently as shown above
 - Keep project controllers and routes simple; favor small, targeted tests
 
+Testing (npm scripts)
+- Run all libs: `npm test`
+- Individual suites:
+  - Compression: `npm run test:compression`
+  - WebAuthn: `npm run test:webauthn`
+  - Magic Links: `npm run test:magick-links`
+  - SQLite: `npm run test:sqlite`
+
+Adding a new library with tests
+- Place tests under the library directory (e.g., `libs/<name>/test/`)
+- Add a script in `package.json` to run it (e.g., `test:<name>`)
+- Update the aggregate `test` script to include `npm run -s test:<name>` so `npm test` runs everything
+- Keep tests dependency‑free; prefer Node’s built‑in `node:test` and `assert`
+
 Troubleshooting
 - Server doesn’t start
   - Ensure Node 18+ and `package.json` has `"type": "module"`
@@ -210,4 +224,3 @@ File Map (for reference)
 
 License
 - This repository may include third‑party code under their respective licenses (e.g., vendored SQLite). See `libs/sqlite/LICENSE`.
-
