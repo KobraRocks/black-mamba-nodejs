@@ -5,10 +5,10 @@ import { loadEnvConfig, buildMessage, MailerError, dotStuff } from './index.js';
 test('loadEnvConfig reads environment and supports overrides', () => {
   const old = { ...process.env };
   try {
-    process.env.SMTP_HOST = 'smtp.example.com';
-    process.env.SMTP_PORT = '465';
-    process.env.SMTP_USERNAME = 'user';
-    process.env.SMTP_PASSWORD = 'pass';
+    process.env.BM_SMTP_HOST = 'smtp.example.com';
+    process.env.BM_SMTP_PORT = '465';
+    process.env.BM_SMTP_USERNAME = 'user';
+    process.env.BM_SMTP_PASSWORD = 'pass';
     const cfg = loadEnvConfig();
     assert.equal(cfg.host, 'smtp.example.com');
     assert.equal(cfg.port, 465);
@@ -26,9 +26,9 @@ test('loadEnvConfig reads environment and supports overrides', () => {
 test('loadEnvConfig validates required variables', () => {
   const old = { ...process.env };
   try {
-    delete process.env.SMTP_HOST;
-    delete process.env.SMTP_PORT;
-    assert.throws(() => loadEnvConfig(), /SMTP_HOST/);
+    delete process.env.BM_SMTP_HOST;
+    delete process.env.BM_SMTP_PORT;
+    assert.throws(() => loadEnvConfig(), /BM_SMTP_HOST/);
   } finally {
     Object.assign(process.env, old);
   }

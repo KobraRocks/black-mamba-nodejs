@@ -3,10 +3,10 @@ SMTP (ESM, Zero‑dep)
 Small SMTP client with TLS that sends simple text/HTML emails without external dependencies. Reads SMTP configuration from environment variables — no config object is required.
 
 Environment
-- `SMTP_HOST` (string) — SMTP server hostname
-- `SMTP_PORT` (number) — server port (e.g., 465 for SMTPS)
-- `SMTP_USERNAME` or `SMTP_USER` (string, optional) — username
-- `SMTP_PASSWORD` or `SMTP_PASS` (string, optional) — password
+- `BM_SMTP_HOST` (string) — SMTP server hostname
+- `BM_SMTP_PORT` (number) — server port (e.g., 465 for SMTPS)
+- `BM_SMTP_USERNAME` or `BM_SMTP_USER` (string, optional) — username
+- `BM_SMTP_PASSWORD` or `BM_SMTP_PASS` (string, optional) — password
 
 Exports
 - `sendMail(message, overrides?) => Promise<{ result: true } | { error: Error }>`
@@ -19,7 +19,7 @@ Quick Start (sendMail)
 ```js
 import { sendMail } from './libs/smtp/index.js';
 
-// Ensure env: SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD (if auth needed)
+// Ensure env: BM_SMTP_HOST, BM_SMTP_PORT, BM_SMTP_USERNAME, BM_SMTP_PASSWORD (if auth needed)
 const res = await sendMail({
   from: 'no-reply@example.com',
   to: 'user@example.com',
@@ -101,14 +101,14 @@ console.log(content); // ready to write after SMTP DATA
 ```
 
 loadEnvConfig(overrides?)
-- Reads `SMTP_HOST`, `SMTP_PORT`, and optional credentials from environment.
-- Throws `MailerError` if `SMTP_HOST` or `SMTP_PORT` are missing/invalid.
+- Reads `BM_SMTP_HOST`, `BM_SMTP_PORT`, and optional credentials from environment.
+- Throws `MailerError` if `BM_SMTP_HOST` or `BM_SMTP_PORT` are missing/invalid.
 - `overrides` merges on top of env (for tests or per-call differences).
 ```js
 import { loadEnvConfig } from './libs/smtp/index.js';
 
-process.env.SMTP_HOST = 'smtp.example.com';
-process.env.SMTP_PORT = '465';
+process.env.BM_SMTP_HOST = 'smtp.example.com';
+process.env.BM_SMTP_PORT = '465';
 const cfg = loadEnvConfig();
 // { host: 'smtp.example.com', port: 465, username: '', password: '' }
 

@@ -11,6 +11,7 @@
     "test:sqlite": "node --test libs/sqlite/test/*.test.mjs",
     "test:cookies": "node --test libs/cookies/test.mjs",
     "test:smtp": "node --test libs/smtp/test.mjs",
-    "test": "npm run -s test:compression && npm run -s test:webauthn && npm run -s test:magick-links && npm run -s test:sqlite && npm run -s test:cookies && npm run -s test:smtp"
+    "test:session": "node --test libs/session/test.mjs",
+    "test": "npm run -s test:compression && npm run -s test:webauthn && npm run -s test:magick-links && npm run -s test:sqlite && npm run -s test:cookies && npm run -s test:smtp && npm run -s test:session"
   }
 }

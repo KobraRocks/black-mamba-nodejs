@@ -75,13 +75,13 @@ function validateResponse(response, expectedCode, errorType) {
 
 function loadEnvConfig(overrides = {}) {
   const env = process.env || {};
-  const host = overrides.host || env.SMTP_HOST || env.MAIL_HOST || "";
-  const portRaw = overrides.port ?? env.SMTP_PORT ?? env.MAIL_PORT;
+  const host = overrides.host || env.BM_SMTP_HOST || "";
+  const portRaw = overrides.port ?? env.BM_SMTP_PORT;
   const port = portRaw ? Number(portRaw) : 465;
-  const username = overrides.username || env.SMTP_USERNAME || env.SMTP_USER || env.MAIL_USER || "";
-  const password = overrides.password || env.SMTP_PASSWORD || env.SMTP_PASS || env.MAIL_PASSWORD || "";
-  if (!host) throw new MailerError("Missing SMTP_HOST in environment");
-  if (!port || Number.isNaN(port)) throw new MailerError("Missing or invalid SMTP_PORT in environment");
+  const username = overrides.username || env.BM_SMTP_USERNAME || env.BM_SMTP_USER || "";
+  const password = overrides.password || env.BM_SMTP_PASSWORD || env.BM_SMTP_PASS || "";
+  if (!host) throw new MailerError("Missing BM_SMTP_HOST in environment");
+  if (!port || Number.isNaN(port)) throw new MailerError("Missing or invalid BM_SMTP_PORT in environment");
   return { host: String(host).trim(), port, username, password };
 }
 

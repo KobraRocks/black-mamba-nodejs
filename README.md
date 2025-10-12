@@ -152,6 +152,19 @@ Server Options
 // serve({ port: 4000, http2: true })
 ```
 
+Sessions
+- `request.session` is available in all routes. It is cookie‑backed and persisted in SQLite by default.
+- Example:
+  ```js
+  // set and persist
+  request.session.set('user', { id: 1, email: 'user@example.com' });
+  await request.session.save();
+
+  // read later
+  const user = request.session.get('user');
+  const anonymous = request.session.is_anonymous; // true if no cookie was sent by client
+  ```
+
 Conventions (No External Deps, ESM Only)
 - ESM imports everywhere: `import { X } from './path.js'`
 - No Typescript; no third‑party packages
@@ -166,8 +179,13 @@ Included Libraries
   - Test: `node --test libs/cookies/test.mjs`
 - SMTP — minimal TLS SMTP client using env config
   - Entry: `libs/smtp/index.js`
-  - Env: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`
+  - Env: `BM_SMTP_HOST`, `BM_SMTP_PORT`, `BM_SMTP_USERNAME`, `BM_SMTP_PASSWORD`
   - Test: `node --test libs/smtp/test.mjs`
+- Sessions — cookie‑backed sessions with SQLite store
+  - Entry: `libs/session/index.js`
+  - Env (optional): `BM_SESSION_DB` (default `sessions.db`), `BM_SESSION_SECRET` (required in production)
+  - Usage: automatically attached in `app.js` as `request.session`
+  - Test: `npm run test:session`
 - Magic Links — tiny, HMAC‑based, single‑use link tokens
   - Entry: `libs/magick-links/src/index.js`
   - Test: `node --test libs/magick-links/test/*.test.mjs`
@@ -200,6 +218,7 @@ Testing (npm scripts)
   - Compression: `npm run test:compression`
   - Cookies: `npm run test:cookies`
   - SMTP: `npm run test:smtp`
+  - Session: `npm run test:session`
   - WebAuthn: `npm run test:webauthn`
   - Magic Links: `npm run test:magick-links`
   - SQLite: `npm run test:sqlite`

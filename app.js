@@ -9,6 +9,7 @@ import { ApplicationController } from "./controllers/application.js";
 import { Router } from "./router.js";
 import { createCompression } from './libs/compression/index.js';
 import { readCookies } from './libs/cookies/index.js';
+import { createSession } from './libs/session/index.js';
 
 async function load_controllers() {
   // Recursively import controllers from './controllers' excluding application.js
@@ -121,6 +122,16 @@ function serve(options = {}) {
     const start = Date.now();
     const request = createRequest(req);
     const response = createResponse(req, res);
+    // Attach session for each request (SQLite-backed by default)
+    const session = createSession({
+      name: 'bm.sid',
+      secret: process.env.BM_SESSION_SECRET || 'dev-secret-change-me',
+      ttl: 60 * 60 * 24 * 7,
+      rolling: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax'
+    });
+    await session.attach(request, response);
 
     try {
       router.handle(request, response);
