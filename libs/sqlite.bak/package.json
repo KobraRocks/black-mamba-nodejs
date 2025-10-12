@@ -1,0 +1,13 @@
+{
+  "name": "@acme/sqlite",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./index.mjs",
+  "exports": {
+    ".": {
+      "import": "./index.mjs"
+    }
+  },
+  "engines": { "node": ">=18.18" }
+}
+
