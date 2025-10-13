@@ -1,10 +1,10 @@
 # SQLite native build outputs (do not commit)
-libs/sqlite/build/
-**/*.node
-**/*.o
+# libs/sqlite/build/
+# **/*.node
+# **/*.o
 # Allow shipping the Release binary
-!libs/sqlite/build/Release/
-!libs/sqlite/build/Release/*.node
+# !libs/sqlite/build/Release/
+# !libs/sqlite/build/Release/*.node
 
 # Node logs and misc
 npm-debug.log*
