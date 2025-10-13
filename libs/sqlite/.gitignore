@@ -1,8 +1,0 @@
-# Ignore build artifacts by default
-build/
-*.o
-*.node
-
-# Allow shipping the Release binary
-!build/Release/
-!build/Release/*.node
