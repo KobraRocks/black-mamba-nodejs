@@ -19,7 +19,7 @@ export class ApplicationController {
       for (const handler of this.before_handlers) {
           try {
             // request object or response object can be increased by handlers;
-            this.[handler](request);
+            this[handler](request);
           } catch (err) {
             this.error = err;
             return this;

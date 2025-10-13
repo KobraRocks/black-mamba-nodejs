@@ -2,6 +2,9 @@
 libs/sqlite/build/
 **/*.node
 **/*.o
+# Allow shipping the Release binary
+!libs/sqlite/build/Release/
+!libs/sqlite/build/Release/*.node
 
 # Node logs and misc
 npm-debug.log*
@@ -9,3 +12,7 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 
+# DB 
+*.db
+**/*.db
+**/*.sqlite

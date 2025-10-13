@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "type": "module",
   "main": "./index.mjs",
+  "scripts": {
+    "build:release": "node-gyp rebuild --release",
+    "build": "node-gyp rebuild"
+  },
   "exports": {
     ".": {
       "import": "./index.mjs"
@@ -10,4 +14,3 @@
   },
   "engines": { "node": ">=18.18" }
 }
-

@@ -20,8 +20,17 @@ High‑performance, dependency‑free SQLite for Node using a native N‑API add
 
 **Build**
 
-- `cd libs/sqlite && node-gyp rebuild`
+- `npm run build` or `npm run build:release`
   - Produces `libs/sqlite/build/Release/sqlite.node`
+  - `.gitignore` allows committing `build/Release/sqlite.node` (only this binary)
+
+**Ship to Production**
+
+- Build on a host matching production OS/arch and libc.
+- Run: `npm run build:release`
+- Verify: `ls build/Release/sqlite.node && ldd build/Release/sqlite.node`
+- Commit: `git add build/Release/sqlite.node && git commit -m "Ship sqlite addon binary" && git push`
+- Node ABI: uses N-API for cross-version stability; still match distro libc (glibc vs musl).
 
 **Exports**
 
