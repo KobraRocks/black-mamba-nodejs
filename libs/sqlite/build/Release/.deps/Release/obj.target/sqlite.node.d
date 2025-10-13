@@ -1,0 +1,1 @@
+cmd_Release/obj.target/sqlite.node := g++ -o Release/obj.target/sqlite.node -shared -pthread -rdynamic -m64  -Wl,-soname=sqlite.node -Wl,--start-group Release/obj.target/sqlite/src/native/sqlite_addon.o Release/obj.target/sqlite/src/third_party/sqlite/sqlite3.o -Wl,--end-group 
