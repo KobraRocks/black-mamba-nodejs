@@ -57,6 +57,11 @@ function withAbort(db, promise, signal) {
 }
 
 export class Database {
+  /**
+   * Experimental: async constructor helper.
+   * Opens a database and returns a Database instance.
+   * @experimental
+   */
   static async open(path=':memory:', flags=0) { return open(path, flags) }
   constructor(handle) { Object.defineProperty(this, '_h', { value: handle }) }
 
@@ -64,19 +69,43 @@ export class Database {
   get openFlags() { return native ? native.dbFlags(this._h) : this._h.flags }
   get isOpen()    { return native ? native.dbIsOpen(this._h) : this._h.isOpen }
 
+  /**
+   * Experimental: async SQL execution without result rows.
+   * @experimental
+   */
   exec(sql, opts)       { if (!native) return this._h.exec(sql, opts); const p = native.dbExec(this._h, String(sql), opts ?? {}); return withAbort(this, p, opts?.signal) }
   execSync(sql, opts)   { return native ? native.dbExecSync(this._h, String(sql), opts ?? {}) : this._h.execSync(sql, opts) }
+  /**
+   * Experimental: async DML (INSERT/UPDATE/DELETE) with metadata.
+   * @experimental
+   */
   run(sql, p, o)        { if (!native) return this._h.run(sql, p, o); const pr = native.dbRun(this._h, String(sql), p ?? null, o ?? {}); return withAbort(this, pr, o?.signal) }
   runSync(sql, p, o)    { return native ? native.dbRunSync(this._h, String(sql), p ?? null, o ?? {}) : this._h.runSync(sql, p, o) }
+  /**
+   * Experimental: async single-row query.
+   * @experimental
+   */
   get(sql, p, o)        { if (!native) return this._h.get(sql, p, o); const pr = native.dbGet(this._h, String(sql), p ?? null, o ?? {}); return withAbort(this, pr, o?.signal) }
   getSync(sql, p, o)    { return native ? native.dbGetSync(this._h, String(sql), p ?? null, o ?? {}) : this._h.getSync(sql, p, o) }
+  /**
+   * Experimental: async multi-row query.
+   * @experimental
+   */
   all(sql, p, o)        { if (!native) return this._h.all(sql, p, o); const pr = native.dbAll(this._h, String(sql), p ?? null, o ?? {}); return withAbort(this, pr, o?.signal) }
   allSync(sql, p, o)    { return native ? native.dbAllSync(this._h, String(sql), p ?? null, o ?? {}) : this._h.allSync(sql, p, o) }
 
   // Minimal prepare support via shim; native provides full Statement
+  /**
+   * Experimental: async prepare returning a Statement.
+   * @experimental
+   */
   async prepare(sql, o) { if (!native) throw new Error('prepare not available without native build'); const s = await native.dbPrepare(this._h, String(sql), o ?? {}); return new Statement(this, s) }
   prepareSync(sql, o)   { if (!native) throw new Error('prepare not available without native build'); const s = native.dbPrepareSync(this._h, String(sql), o ?? {}); return new Statement(this, s) }
 
+  /**
+   * Experimental: async transaction wrapper. Throws roll back the transaction.
+   * @experimental
+   */
   async transaction(fn, mode='deferred') {
     const begin = mode ? `BEGIN ${mode.toUpperCase()} TRANSACTION` : 'BEGIN'
     await this.exec(begin)
@@ -97,18 +126,37 @@ export class Database {
     this.execSync(begin)
     try { const r = fn(); this.execSync('COMMIT'); return r } catch (e) { try { this.execSync('ROLLBACK') } catch {}; throw e }
   }
+  /**
+   * Experimental: async PRAGMA helper (returns implementation-defined value).
+   * @experimental
+   */
   pragma(n, v)       { return native ? native.dbPragma(this._h, String(n), v) : this._h.pragma(n, v) }
   pragmaSync(n, v)   { return native ? native.dbPragmaSync(this._h, String(n), v) : this._h.pragmaSync(n, v) }
+  /**
+   * Experimental: async convenience to enable WAL.
+   * @experimental
+   */
   enableWAL()        { return this.exec('PRAGMA journal_mode=WAL') }
   enableWALSync()    { return this.execSync('PRAGMA journal_mode=WAL') }
+  /**
+   * Experimental: async WAL checkpoint.
+   * @experimental
+   */
   checkpoint(mode='PASSIVE') { if (!native) return this.exec(`PRAGMA wal_checkpoint(${mode})`); return native.dbCheckpoint(this._h, mode) }
   checkpointSync(mode='PASSIVE') { if (!native) return this.execSync(`PRAGMA wal_checkpoint(${mode})`); return native.dbCheckpointSync(this._h, mode) }
 
   interrupt()        { return native ? native.dbInterrupt(this._h) : undefined }
+  /**
+   * Experimental: async close. Prefer closeSync() in critical shutdown paths.
+   * @experimental
+   */
   close()            { return native ? native.dbClose(this._h) : this._h.close() }
   closeSync()        { return native ? native.dbCloseSync(this._h) : this._h.closeSync() }
 }
-
+/**
+ * Experimental: async open returning a Database.
+ * @experimental
+ */
 export async function open(path=':memory:', flags=0) {
   if (native) { const h = await native.open(path, flags); return new Database(h) }
   const h = await shim.open(path, flags); return new Database(h)
@@ -122,13 +170,33 @@ export class Statement {
   constructor(db, handle) { this.db = db; this._s = handle }
   get sql() { return native.stmtSql(this._s) }
   bind(p) { native.stmtBind(this._s, p ?? null); return this }
+  /**
+   * Experimental: async step one row.
+   * @experimental
+   */
   step(o) { return native.stmtStep(this._s, o ?? {}) }
   stepSync() { return native.stmtStepSync(this._s) }
+  /**
+   * Experimental: async get one row (and reset).
+   * @experimental
+   */
   get() { return native.stmtGet(this._s) }
   getSync() { return native.stmtGetSync(this._s) }
+  /**
+   * Experimental: async get all rows up to limit.
+   * @experimental
+   */
   all(limit, o) { return native.stmtAll(this._s, limit ?? 0, o ?? {}) }
   allSync(limit) { return native.stmtAllSync(this._s, limit ?? 0) }
+  /**
+   * Experimental: async reset the prepared statement.
+   * @experimental
+   */
   reset() { return native.stmtReset(this._s) }
+  /**
+   * Experimental: async finalize the prepared statement.
+   * @experimental
+   */
   finalize() { return native.stmtFinalize(this._s) }
   finalizeSync() { return native.stmtFinalizeSync(this._s) }
 }

@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import { Controllers } from "./controllers.js";
 import { ApplicationController } from "./controllers/application.js";
 import { Router } from "./router.js";
+import { migrateAll } from './models/bootstrap.js';
 import { createCompression } from './libs/compression/index.js';
 import { readCookies } from './libs/cookies/index.js';
 import { createSession } from './libs/session/index.js';
@@ -151,5 +152,8 @@ function serve(options = {}) {
 }
 
 // Bootstrap
+if (String(process.env.BM_MIGRATE || '').toLowerCase() === '1' || String(process.env.BM_MIGRATE || '').toLowerCase() === 'true') {
+  try { await migrateAll(console); } catch (e) { console.error('Migration failed:', e?.message || e); process.exit(1); }
+}
 await load_controllers();
 serve();
