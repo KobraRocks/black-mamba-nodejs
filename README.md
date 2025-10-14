@@ -241,6 +241,16 @@ Included Libraries
   - Test: `node --test libs/sqlite/test/*.test.mjs`
   - Do not commit build artifacts: add `libs/sqlite/build/`, `**/*.node`, and `**/*.o` to `.gitignore` (already included). These files are platform‑specific and can break pushes (large binaries) — build locally instead.
 
+Versioning
+- Source of truth: `VERSION` file at repo root.
+- Synced automatically with `package.json:version`.
+- Commands:
+  - Show: `npm run version` (or `node bin/version.js --json`)
+  - Bump: `npm run version:bump:patch` (or `:minor`, `:major`)
+  - Set explicit: `npm run version:set -- 1.2.3`
+- Library: `libs/version/index.js` exports `version`, `readVersion()`, `setVersion(v)`, `bump(kind)`.
+- Tests: `npm run test:version`.
+
 Testing Philosophy
 - Each lib ships with its own focused tests in its directory
 - Run them independently as shown above
