@@ -8,6 +8,7 @@ import { Controllers } from "./controllers.js";
 import { ApplicationController } from "./controllers/application.js";
 import { Router } from "./router.js";
 import { migrateAll } from './models/bootstrap.js';
+import { buildModelRegistry } from './models/index.js';
 import { createCompression } from './libs/compression/index.js';
 import { readCookies } from './libs/cookies/index.js';
 import { createSession } from './libs/session/index.js';
@@ -173,5 +174,10 @@ if (wantMigrate) {
     process.exit(1);
   }
 }
+// Build model registry and load controllers, then wire models into controllers
+const ModelRegistry = await buildModelRegistry();
 await load_controllers();
+for (const [, controller] of Controllers) {
+  if (typeof controller.setModels === 'function') controller.setModels(ModelRegistry);
+}
 serve();

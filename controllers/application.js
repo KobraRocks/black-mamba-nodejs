@@ -1,4 +1,5 @@
 export class ApplicationController {
+  static modelRegistry = null;
 
   namespace = "";              //default
   resources = "";              //default
@@ -9,11 +10,31 @@ export class ApplicationController {
   after_handlers = new Set();  //default
   custom_routes = new Set();   //default ["GET", "show", "/resources/:id/:user_id"]
   error = null;
+  models = null;               // injected registry
 
   get has_namespace() { return this.namespace.length > 0; }
   get use_before() { return this.before_handlers.size > 0;}
   get use_after() { return this.after_handlers.size > 0;}
   get has_custom_routes() { return this.custom_routes.size > 0; }
+
+  // Instance-level model resolver (works even before wiring, if static registry is set)
+  model(key) {
+    const reg = this.models || ApplicationController.modelRegistry;
+    return reg?.get ? reg.get(key) : undefined;
+  }
+
+  // Inject model registry and expose Rails-like constants on the instance
+  setModels(registry) {
+    this.models = registry;
+    ApplicationController.modelRegistry = registry;
+    if (!registry) return this;
+    // Attach by class name, e.g., this.User
+    for (const name of Object.keys(registry.byName || {})) {
+      // Do not override existing controller properties
+      if (!(name in this)) this[name] = registry.byName[name];
+    }
+    return this;
+  }
 
   before(request, response) {
       for (const handler of this.before_handlers) {
@@ -96,6 +117,18 @@ export class ApplicationController {
         response.error(error);
         return response.send();
       }
+    }
+
+    // Allow actions to return a structured response descriptor
+    if (result && typeof result === 'object' && result._bm_response === true) {
+      const code = Number(result.status || 200);
+      if (result.headers && typeof result.headers === 'object') {
+        for (const [k, v] of Object.entries(result.headers)) response.header(k, v);
+      }
+      if (Object.prototype.hasOwnProperty.call(result, 'json')) return response.status(code).json(result.json);
+      if (Object.prototype.hasOwnProperty.call(result, 'text')) return response.status(code).text(result.text);
+      if (Object.prototype.hasOwnProperty.call(result, 'body')) return response.status(code).send(result.body);
+      return response.status(code).send();
     }
 
     // Prefer JSON when the client asks for it
