@@ -1,3 +1,5 @@
+import { renderViewIfPresent } from '../libs/views/index.js';
+
 export class ApplicationController {
   static modelRegistry = null;
 
@@ -97,6 +99,15 @@ export class ApplicationController {
     return response.status(405).send("Method not allowed");
   }
 
+  // Helper to request view rendering from an action.
+  // Usage: return this.render(assigns) or this.render('show', assigns)
+  render(actionOrAssigns, maybeAssigns) {
+    if (typeof actionOrAssigns === 'string') {
+      return { _bm_view: true, action: actionOrAssigns, assigns: maybeAssigns };
+    }
+    return { _bm_view: true, action: null, assigns: actionOrAssigns };
+  }
+
 
   execute(action, request, response) {
     if (this.use_before) {
@@ -108,34 +119,73 @@ export class ApplicationController {
       }
     }
     
-    const result = this[action](request, response);
+    const maybe = this[action](request, response);
 
-    if (this.use_after) {
-      const { error } = this.after(request, response);
+    const finalize = (result) => {
+      if (this.use_after) {
+        const { error } = this.after(request, response);
 
-      if (error) {
-        response.error(error);
-        return response.send();
+        if (error) {
+          response.error(error);
+          return response.send();
+        }
       }
-    }
 
-    // Allow actions to return a structured response descriptor
-    if (result && typeof result === 'object' && result._bm_response === true) {
-      const code = Number(result.status || 200);
-      if (result.headers && typeof result.headers === 'object') {
-        for (const [k, v] of Object.entries(result.headers)) response.header(k, v);
+      // Allow actions to return a structured response descriptor
+      if (result && typeof result === 'object' && result._bm_response === true) {
+        const code = Number(result.status || 200);
+        if (result.headers && typeof result.headers === 'object') {
+          for (const [k, v] of Object.entries(result.headers)) response.header(k, v);
+        }
+        if (Object.prototype.hasOwnProperty.call(result, 'json')) return response.status(code).json(result.json);
+        if (Object.prototype.hasOwnProperty.call(result, 'text')) return response.status(code).text(result.text);
+        if (Object.prototype.hasOwnProperty.call(result, 'body')) return response.status(code).send(result.body);
+        return response.status(code).send();
       }
-      if (Object.prototype.hasOwnProperty.call(result, 'json')) return response.status(code).json(result.json);
-      if (Object.prototype.hasOwnProperty.call(result, 'text')) return response.status(code).text(result.text);
-      if (Object.prototype.hasOwnProperty.call(result, 'body')) return response.status(code).send(result.body);
-      return response.status(code).send();
+
+      // Explicit view render request from action
+      if (result && typeof result === 'object' && result._bm_view === true) {
+        const act = result.action || action;
+        Promise.resolve(renderViewIfPresent(this, act, request, response, result.assigns))
+          .then((rendered) => { if (!rendered) response.status(404).text('View not found'); })
+          .catch((err) => { try { response.error(err); } finally { response.send(); } });
+        return;
+      }
+
+      // Prefer JSON when the client asks for it
+      if (this.wants_json(request)) {
+        return response.json(result);
+      }
+
+      // Auto-render view when an action returns nothing and a matching view exists.
+      if (result === undefined || result === null) {
+        // Fire and forget; renderViewIfPresent writes to response when present.
+        Promise.resolve(renderViewIfPresent(this, action, request, response, undefined))
+          .then((rendered) => { if (!rendered) response.send(result); })
+          .catch(() => response.send(result));
+        return;
+      }
+
+      // If a plain object/array is returned and JSON is not requested,
+      // attempt to render a view using that object as assigns.
+      if (typeof result === 'object' && !Buffer.isBuffer(result)) {
+        Promise.resolve(renderViewIfPresent(this, action, request, response, result))
+          .then((rendered) => { if (!rendered) response.send(result); })
+          .catch(() => response.send(result));
+        return;
+      }
+
+      return response.send(result);
+    };
+
+    // If the action is async, resolve it and then finalize
+    if (maybe && typeof maybe.then === 'function') {
+      maybe.then(finalize).catch((err) => {
+        try { response.error(err); } finally { response.send(); }
+      });
+      return;
     }
 
-    // Prefer JSON when the client asks for it
-    if (this.wants_json(request)) {
-      return response.json(result);
-    }
-
-    return response.send(result);
+    return finalize(maybe);
   }
 }

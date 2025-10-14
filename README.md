@@ -241,6 +241,59 @@ Included Libraries
   - Test: `node --test libs/sqlite/test/*.test.mjs`
   - Do not commit build artifacts: add `libs/sqlite/build/`, `**/*.node`, and `**/*.o` to `.gitignore` (already included). These files are platform‑specific and can break pushes (large binaries) — build locally instead.
 
+Views
+- Simple, Rails‑inspired views using plain JS modules and template literals.
+- Convention: `views/<resources>/<action>.js` or `views/<singular>/<action>.js`.
+- Namespaces are supported: `views/<namespace>/<resources>/<action>.js`.
+- A view module must export a function (default or `render`) returning a string (HTML).
+- Auto‑render: if an action returns nothing (`undefined`/`null`) and a matching view exists, it is rendered automatically with `Content-Type: text/html`.
+- Library: `libs/views/index.js` (helpers: `findView`, `renderViewIfPresent`).
+- Test: `npm run test:views`.
+
+Example: `views/users/index.js`
+```js
+export default function ({ assigns }) {
+  // Use template literals to compose HTML; "assigns" can be ignored or used.
+  return `<!doctype html>
+  <html lang="en">
+    <head><meta charset="utf-8"><title>Users</title></head>
+    <body>
+      <h1>Users</h1>
+      <p>Hello from a view.</p>
+    </body>
+  </html>`;
+}
+```
+
+Usage
+- In a controller action, return nothing to trigger the default view:
+```js
+// controllers/users.js
+index(_req, _res) {
+  // If views/users/index.js exists, it will be rendered automatically.
+}
+```
+
+- Pass data to the view by returning an object (used as `assigns`) when JSON is not requested. If a matching view exists, it will receive that data; otherwise the object is sent as the response.
+```js
+show(req, _res) {
+  const user = this.User.find(Number(req.params.id));
+  if (!user) return { _bm_response: true, status: 404, json: { error: 'not found' } };
+  // When Accept is HTML (or default) and views/users/show.js exists,
+  // it will be rendered with assigns = { user }.
+  return { user };
+}
+```
+
+- Or explicitly request rendering from an action (helpers on controller):
+```js
+index(_req, _res) {
+  const users = this.User.all();
+  return this.render({ users });               // renders views/users/index.js
+  // or: return this.render('show', { user }); // renders views/users/show.js
+}
+```
+
 Versioning
 - Source of truth: `VERSION` file at repo root.
 - Synced automatically with `package.json:version`.
