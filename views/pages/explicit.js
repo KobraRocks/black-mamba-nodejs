@@ -1,0 +1,1 @@
+export default function ({ assigns }) { return '<p>' + assigns.name + '</p>'; }

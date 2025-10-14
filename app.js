@@ -1,3 +1,4 @@
+import './libs/env/index.js';
 import http from 'node:http';
 import http2 from 'node:http2';
 import { fileURLToPath, pathToFileURL } from 'node:url';

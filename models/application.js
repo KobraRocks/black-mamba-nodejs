@@ -5,6 +5,7 @@ import { openSync as openDatabase } from "../libs/sqlite/index.mjs";
 import { pluralize as pluralizeWord } from "../libs/inflector/index.js";
 
 // -- DB bootstrap -------------------------------------------------------------
+import '../libs/env/index.js';
 // Uses BM_DATABASE (or BM_SESSION_DB fallback used elsewhere in the repo)
 const DB = openDatabase(process.env.BM_DATABASE || process.env.BM_SESSION_DB || ":memory:");
 

@@ -1,3 +1,4 @@
+import '../libs/env/index.js';
 import { ApplicationRecord } from './application.js';
 import { openSync as openDatabase } from "../libs/sqlite/index.mjs";
 
@@ -19,4 +20,3 @@ WebauthnCredential.migrate = function migrate() {
   db.execSync?.(`CREATE INDEX IF NOT EXISTS idx_webauthn_user_id ON ${this.table}(user_id);`);
   return ok;
 };
-

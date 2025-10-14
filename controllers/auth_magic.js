@@ -1,3 +1,4 @@
+import '../libs/env/index.js';
 import { ApplicationController } from './application.js';
 import { createMagicLink, consumeMagicLink, memoryStore } from '../libs/magick-links/src/index.js';
 import crypto from 'node:crypto';

@@ -1,3 +1,4 @@
+import '../../env/index.js';
 import { open } from '../../sqlite/index.mjs';
 
 export function SQLiteStore(dbPath = process.env.BM_SESSION_DB || process.env.BM_DATABASE || 'sessions.db') {

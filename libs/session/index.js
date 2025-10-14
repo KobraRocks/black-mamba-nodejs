@@ -1,3 +1,4 @@
+import '../env/index.js';
 import { newId } from './id.js';
 import { hmacSign, hmacVerify, seal, unseal } from './crypto.js';
 import { bakeCookie } from './cookie.js';

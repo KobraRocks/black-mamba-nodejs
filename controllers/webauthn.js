@@ -1,3 +1,4 @@
+import '../libs/env/index.js';
 import { ApplicationController } from './application.js';
 import { generateRegistrationOptions, generateAuthenticationOptions, verifyRegistrationResponse, verifyAuthenticationResponse } from '../libs/webauthn/index.js';
 import { base64url } from '../libs/webauthn/base64url.js';

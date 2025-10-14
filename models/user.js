@@ -1,3 +1,4 @@
+import '../libs/env/index.js';
 import { ApplicationRecord } from './application.js';
 import { openSync as openDatabase } from "../libs/sqlite/index.mjs";
 

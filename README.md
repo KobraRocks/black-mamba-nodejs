@@ -26,7 +26,11 @@ Boot Sequence
 
 Environment & Modes
 - Production is the default mode.
-- Set `BM_DEV=true` to enable development conveniences:
+- Per‑project `.env` (takes precedence over shell):
+  - Add a `.env` file at repo root with BM_-prefixed vars (only keys starting with `BM_` are read).
+  - Values from `.env` override existing shell environment variables for this process.
+  - Loaded automatically on startup and by libs that read env.
+- Set `BM_DEV=true` (in `.env` or shell) to enable development conveniences:
   - Session cookies are not marked `secure`.
   - Migrations run automatically at startup unless `BM_MIGRATE` is set.
   - A banner `Dev mode enabled` prints at boot.
@@ -45,6 +49,14 @@ BM_DEV=true BM_MIGRATE=false npm start # dev but skip migrations
 # Production
 npm start                              # no migrations by default
 BM_MIGRATE=1 npm start                 # explicitly run migrations, then start
+```
+
+`.env` example
+```
+BM_DEV=true
+BM_PORT=4000
+BM_DATABASE=./dev.sqlite
+BM_SESSION_SECRET=supersecretchangeme
 ```
 
 Hello, Controller

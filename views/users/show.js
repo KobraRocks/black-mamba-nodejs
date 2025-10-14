@@ -1,0 +1,1 @@
+export default function ({ assigns }) { return '<h1>User</h1><p>' + (assigns.email || '') + '</p>'; }

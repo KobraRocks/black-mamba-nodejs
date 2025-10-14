@@ -1,0 +1,1 @@
+export default function ({ assigns }) { const count = Array.isArray(assigns) ? assigns.length : 0; return '<h1>Users Index</h1><p>count=' + count + '</p>'; }

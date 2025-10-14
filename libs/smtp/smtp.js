@@ -1,3 +1,4 @@
+import '../env/index.js';
 import tls from "tls";
 import crypto from "crypto";
 import { Buffer } from "buffer";
