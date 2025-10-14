@@ -24,6 +24,29 @@ Boot Sequence
 - `router.js:62` serves files from `public/` when paths match
 - `libs/compression/index.js:84` transparently compresses responses when enabled
 
+Environment & Modes
+- Production is the default mode.
+- Set `BM_DEV=true` to enable development conveniences:
+  - Session cookies are not marked `secure`.
+  - Migrations run automatically at startup unless `BM_MIGRATE` is set.
+  - A banner `Dev mode enabled` prints at boot.
+- Migrations on startup (`app/models/bootstrap.js`):
+  - Set `BM_MIGRATE=true` (or `1`) to run migrations explicitly (works in prod too).
+  - In dev mode with `BM_MIGRATE` unset, migrations run by default.
+  - Migrations are ordered by foreign keys: tables referenced by a model’s field `reference: "table(id)"` are created first.
+  - Database file: `BM_DATABASE` (falls back to `BM_SESSION_DB`, then `:memory:`)
+
+Examples
+```bash
+# Development
+BM_DEV=true npm start                 # logs "Dev mode enabled" and runs migrations
+BM_DEV=true BM_MIGRATE=false npm start # dev but skip migrations
+
+# Production
+npm start                              # no migrations by default
+BM_MIGRATE=1 npm start                 # explicitly run migrations, then start
+```
+
 Hello, Controller
 - Controllers are instances of `ApplicationController` that define resource names and action methods
 - Export instances (not classes) so the loader can register them automatically
@@ -222,6 +245,8 @@ Testing (npm scripts)
   - WebAuthn: `npm run test:webauthn`
   - Magic Links: `npm run test:magick-links`
   - SQLite: `npm run test:sqlite`
+  - Models: `npm run test:model`
+  - App bootstrap (dev banner + migrations): `npm run test:app`
 
 Adding a new library with tests
 - Place tests under the library directory (e.g., `libs/<name>/test/`)

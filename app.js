@@ -109,9 +109,14 @@ function createResponse(req, res) {
   return api;
 }
 
+const isDev = /^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''));
+if (isDev) console.log('Dev mode enabled');
+const defaultPort = Number.parseInt(process.env.BM_PORT, 10) || 3000;
+const dbPathBanner = (process.env.BM_DATABASE || process.env.BM_SESSION_DB || ':memory:');
+
 function serve(options = {}) {
   const {
-    port = 3000,
+    port = defaultPort,
     http2: useHttp2 = false,
     logger = console,
   } = options;
@@ -129,7 +134,8 @@ function serve(options = {}) {
       secret: process.env.BM_SESSION_SECRET || 'dev-secret-change-me',
       ttl: 60 * 60 * 24 * 7,
       rolling: true,
-      secure: process.env.NODE_ENV === 'production',
+      // Production by default; enable dev via BM_DEV=true
+      secure: !isDev,
       sameSite: 'Lax'
     });
     await session.attach(request, response);
@@ -152,8 +158,20 @@ function serve(options = {}) {
 }
 
 // Bootstrap
-if (String(process.env.BM_MIGRATE || '').toLowerCase() === '1' || String(process.env.BM_MIGRATE || '').toLowerCase() === 'true') {
-  try { await migrateAll(console); } catch (e) { console.error('Migration failed:', e?.message || e); process.exit(1); }
+// By default run migrations only in dev (BM_DEV=true). In production, require BM_MIGRATE=true.
+const migrateFlag = String(process.env.BM_MIGRATE || '').toLowerCase();
+const wantMigrate = migrateFlag === '1' || migrateFlag === 'true' || (isDev && migrateFlag === '');
+if (wantMigrate) {
+  try {
+    const order = await migrateAll(console);
+    if (isDev) {
+      console.log(`DB: ${dbPathBanner}`);
+      console.log(`Migrations: ${order.join(', ')}`);
+    }
+  } catch (e) {
+    console.error('Migration failed:', e?.message || e);
+    process.exit(1);
+  }
 }
 await load_controllers();
 serve();
