@@ -142,6 +142,17 @@ Request and Response API
   - `response.send(body)` — string, Buffer, or object (auto‑JSON)
   - `response.error(err)` — 500 text
 
+Content Negotiation (JSON vs Text)
+- Controllers can keep returning simple values. The base controller now detects when JSON is expected and responds accordingly without changing your actions.
+- JSON is selected when either condition is true:
+  - `Accept` header includes `application/json`
+  - Query parameter `?format=json` is present
+- Effects:
+  - When JSON is expected, `result` from an action is sent via `response.json(result)`.
+  - Strings are valid JSON (quoted) and are returned with `Content-Type: application/json` when JSON is requested.
+  - Without these hints, strings are returned as `text/plain` and objects are auto‑JSON via `response.send(...)`.
+- Implementation: `controllers/application.js` (`wants_json`) and final send path in `execute`.
+
 Static Files
 - Any request that matches a file under `public/` is served directly
 - `GET /` serves `public/index.html` if present

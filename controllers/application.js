@@ -42,6 +42,18 @@ export class ApplicationController {
     return this;
   }
 
+  // Decide if the current request expects JSON over text
+  wants_json(request) {
+    try {
+      const accept = String(request.headers?.accept || '').toLowerCase();
+      if (accept.includes('application/json')) return true;
+
+      const qp = request.url?.searchParams?.get('format');
+      if (qp && String(qp).toLowerCase() === 'json') return true;
+    } catch {}
+    return false;
+  }
+
   index (request, response) {
     return response.status(405).send("Method not allowed");
   }
@@ -84,6 +96,11 @@ export class ApplicationController {
         response.error(error);
         return response.send();
       }
+    }
+
+    // Prefer JSON when the client asks for it
+    if (this.wants_json(request)) {
+      return response.json(result);
     }
 
     return response.send(result);
