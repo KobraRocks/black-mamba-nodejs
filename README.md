@@ -27,6 +27,7 @@ Boot Sequence
 Environment & Modes
 - Production is the default mode.
 - Per‑project `.env` (takes precedence over shell):
+  - Use `.env.template` as a starting point: copy to `.env` and edit values.
   - Add a `.env` file at repo root with BM_-prefixed vars (only keys starting with `BM_` are read).
   - Values from `.env` override existing shell environment variables for this process.
   - Loaded automatically on startup and by libs that read env.
