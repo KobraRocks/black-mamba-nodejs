@@ -16,6 +16,7 @@
     "test:model": "npm run -s test:models",
     "test:models": "node --test models/test/*.test.mjs",
     "test:app": "node --test test/bootstrap_app.test.mjs",
+    "test:e2e": "node --test simulation/run_e2e.test.mjs",
     "test:app:json": "node --test test/json_response.test.mjs",
     "test": "npm run -s test:compression && npm run -s test:webauthn && npm run -s test:magick-links && npm run -s test:sqlite && npm run -s test:cookies && npm run -s test:smtp && npm run -s test:session && npm run -s test:inflector && npm run -s test:models && npm run -s test:app && npm run -s test:app:json"
   }

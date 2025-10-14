@@ -1,4 +1,5 @@
 import { ApplicationRecord } from './application.js';
+import { openSync as openDatabase } from "../libs/sqlite/index.mjs";
 
 export class User extends ApplicationRecord {
   // resources inferred as 'users' from class name
@@ -6,9 +7,8 @@ export class User extends ApplicationRecord {
     // base table
     super.migrate();
     // unique index on email as per simulation/data_models.md
-    const sql = `CREATE UNIQUE INDEX IF NOT EXISTS ${this.table}_email_idx ON ${this.table}(email)`;
-    const stmt = this.stmt('idx:users:email', () => sql);
-    if (stmt.runSync) stmt.runSync(); else stmt.run();
+    const db = openDatabase(process.env.BM_DATABASE || process.env.BM_SESSION_DB || ':memory:');
+    db.execSync(`CREATE UNIQUE INDEX IF NOT EXISTS ${this.table}_email_idx ON ${this.table}(email)`);
   }
 
   validate() {

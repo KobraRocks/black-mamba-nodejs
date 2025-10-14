@@ -145,6 +145,10 @@ function serve(options = {}) {
       router.handle(request, response);
     } catch (err) {
       if (!res.headersSent) response.error(err);
+      if (isDev) {
+        console.error('[DEV] Route error', req.method, request.url.pathname);
+        if (err?.stack) console.error(err.stack); else console.error(String(err));
+      }
     } finally {
       const duration = Date.now() - start;
       logger.log(`${req.method} ${request.url.pathname} ${res.statusCode || 200} - ${duration}ms`);
