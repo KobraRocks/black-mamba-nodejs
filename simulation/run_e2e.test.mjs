@@ -131,9 +131,11 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
 
   // 1) Static
   const r1 = await withStep('GET / static index', async () => fetch(`${base}/`));
+  await withStep('assert home page status 200', async () => {
+    assert.equal(r1.status, 200);
+  });
   const t1 = await withStep('read / response text', async () => r1.text());
   await withStep('assert / index served', async () => {
-    assert.equal(r1.status, 200);
     assert.match(t1, /It works/);
   });
 
