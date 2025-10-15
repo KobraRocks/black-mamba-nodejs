@@ -38,14 +38,14 @@ export const Events = new class extends ApplicationController {
     return et.toJSON();
   }
 
-  slots(req, res) {
+  slots(req, _res) {
     const id = Number(req.params.id);
     const et = this.model('event_type').find(id);
-    if (!et) return res.status(404).json({ error: 'EventType not found' });
+    if (!et) return { _bm_response: true, status: 404, json: { error: 'EventType not found' } };
     const date = req.url.searchParams.get('date'); // YYYY-MM-DD in organizer local
     const tzOffset = req.url.searchParams.get('tz_offset') || et.tz_offset || '+00:00';
     const timeZone = req.url.searchParams.get('timeZone') || '';
-    if (!date) return res.status(400).json({ error: 'date required (YYYY-MM-DD)' });
+    if (!date) return { _bm_response: true, status: 400, json: { error: 'date required (YYYY-MM-DD)' } };
     let windows;
     try {
       const weekly = JSON.parse(et.availability_json || '{}') || {};
@@ -76,24 +76,24 @@ export const Events = new class extends ApplicationController {
           return { utc, local };
         } catch { return { utc, local: null }; }
       });
-      return res.json({ slots: mapped, timeZone });
+      return { slots: mapped, timeZone };
     }
-    return res.json({ slots });
+    return { slots };
   }
 
-  slots_slug(req, res) {
+  slots_slug(req, _res) {
     const slug = String(req.params.slug || '');
     const ET = this.model('event_type');
     const et = ET.find_by({ slug });
-    if (!et) return res.status(404).json({ error: 'EventType not found' });
+    if (!et) return { _bm_response: true, status: 404, json: { error: 'EventType not found' } };
     // reuse slots
     req.params.id = String(et.id);
-    return this.slots(req, res);
+    return this.slots(req, _res);
   }
 
-  async create(req, res) {
+  async create(req, _res) {
     const uid = req.session?.getUserId();
-    if (!uid) return res.status(401).json({ error: 'unauthorized' });
+    if (!uid) return { _bm_response: true, status: 401, json: { error: 'unauthorized' } };
     const body = await req.body();
     let availability_json = body?.availability_json;
     if (typeof availability_json !== 'string') availability_json = JSON.stringify(availability_json || {});
@@ -112,34 +112,42 @@ export const Events = new class extends ApplicationController {
     const ET = this.EventType || this.model('event_type');
     // Prefer static create to avoid constructor mismatches
     const et = ET?.create ? ET.create(attrs) : new ET(attrs);
-    if (!et || et.errors?.any?.()) return res.status(422).json({ errors: et?.errors?.fullMessages?.() || ['invalid'] });
-    return res.status(201).json(et.toJSON());
+    if (!et || et.errors?.any?.()) {
+      return { _bm_response: true, status: 422, json: { errors: et?.errors?.fullMessages?.() || ['invalid'] } };
+    }
+    return { _bm_response: true, status: 201, json: et.toJSON() };
   }
 
-  async update(req, res) {
+  async update(req, _res) {
     const uid = req.session?.getUserId();
-    if (!uid) return res.status(401).json({ error: 'unauthorized' });
+    if (!uid) return { _bm_response: true, status: 401, json: { error: 'unauthorized' } };
     const id = Number(req.params.id);
     const ET = this.model('event_type');
     const et = ET.find(id);
-    if (!et || et.user_id !== uid) return res.status(404).json({ error: 'not found' });
+    if (!et || et.user_id !== uid) {
+      return { _bm_response: true, status: 404, json: { error: 'not found' } };
+    }
     const body = await req.body();
     const patch = { ...body };
     if (patch.availability_json && typeof patch.availability_json !== 'string') patch.availability_json = JSON.stringify(patch.availability_json);
     et.assign(patch);
-    if (!et.save()) return res.status(422).json({ errors: et.errors.fullMessages() });
-    return res.json(et.toJSON());
+    if (!et.save()) {
+      return { _bm_response: true, status: 422, json: { errors: et.errors.fullMessages() } };
+    }
+    return et.toJSON();
   }
 
-  destroy(req, res) {
+  destroy(req, _res) {
     const uid = req.session?.getUserId();
-    if (!uid) return res.status(401).json({ error: 'unauthorized' });
+    if (!uid) return { _bm_response: true, status: 401, json: { error: 'unauthorized' } };
     const id = Number(req.params.id);
     const ET = this.model('event_type');
     const et = ET.find(id);
-    if (!et || et.user_id !== uid) return res.status(404).json({ error: 'not found' });
+    if (!et || et.user_id !== uid) {
+      return { _bm_response: true, status: 404, json: { error: 'not found' } };
+    }
     et.destroy();
-    return res.status(204).send();
+    return { _bm_response: true, status: 204 };
   }
 
   // HTML views
