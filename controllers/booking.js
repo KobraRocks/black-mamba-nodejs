@@ -260,7 +260,7 @@ export const Booking = new class extends ApplicationController {
       ? `${Math.floor(duration / 60)}h${duration % 60 ? ` ${duration % 60}m` : ''}`
       : `${duration} min`;
     const tzLabel = offset === '+00:00' ? 'UTC' : `UTC${offset}`;
-    const nowLocal = fromUtc(new Date(Date.now()), offset);
+    const { nowLocal } = this.#resolveOrganizerNow(ctx);
     const currentYear = nowLocal.getUTCFullYear();
     const currentMonth = nowLocal.getUTCMonth() + 1;
 
@@ -279,9 +279,15 @@ export const Booking = new class extends ApplicationController {
     };
   }
 
-  #resolveMonthYear(ctx, { monthParam, yearParam }) {
+  #resolveOrganizerNow(ctx, nowUtc) {
     const { offset } = ctx;
-    const nowLocal = fromUtc(new Date(Date.now()), offset);
+    const timestamp = Number.isFinite(nowUtc) ? nowUtc : Date.now();
+    const nowLocal = fromUtc(new Date(timestamp), offset);
+    return { nowUtc: timestamp, nowLocal };
+  }
+
+  #resolveMonthYear(ctx, { monthParam, yearParam, nowUtc }) {
+    const { nowLocal, nowUtc: resolvedNow } = this.#resolveOrganizerNow(ctx, nowUtc);
     let month;
     if (!monthParam || monthParam === 'current') {
       month = nowLocal.getUTCMonth() + 1;
@@ -295,20 +301,19 @@ export const Booking = new class extends ApplicationController {
     let year = Number(yearParam);
     if (!Number.isFinite(year) || year <= 0) year = nowLocal.getUTCFullYear();
 
-    return { month, year };
+    return { month, year, nowLocal, nowUtc: resolvedNow };
   }
 
   #buildMonth(ctx, params) {
-    const resolved = this.#resolveMonthYear(ctx, params);
+    const nowUtc = Date.now();
+    const resolved = this.#resolveMonthYear(ctx, { ...params, nowUtc });
     if (resolved.error) return resolved;
-    const { month, year } = resolved;
+    const { month, year, nowLocal } = resolved;
     const { offset, windowsForWeekday, eventType, bookings } = ctx;
 
     const firstDayLocal = new Date(`${year}-${pad(month)}-01T00:00:00.000${offset}`);
     const leadingBlanks = firstDayLocal.getUTCDay();
     const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-    const nowUtc = Date.now();
-    const nowLocal = fromUtc(new Date(nowUtc), offset);
     const todayKey = (nowLocal.getUTCFullYear() * 10_000)
       + ((nowLocal.getUTCMonth() + 1) * 100)
       + nowLocal.getUTCDate();
