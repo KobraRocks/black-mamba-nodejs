@@ -28,3 +28,18 @@ test('env loader: .env overrides shell and filters non-BM_', () => {
   }
 });
 
+test('env loader: strips surrounding quotes from .env values', () => {
+  const backup = fs.existsSync(ENV_PATH) ? fs.readFileSync(ENV_PATH, 'utf8') : null;
+  try {
+    writeEnv('BM_SESSION_SECRET="quoted-secret"\n');
+    const env = { ...process.env };
+    delete env.BM_SESSION_SECRET;
+    const proc = spawnSync(process.execPath, ['libs/env/print_env.mjs'], { cwd: root, env, encoding: 'utf8' });
+    assert.equal(proc.status, 0, proc.stderr || 'spawn failed');
+    const out = JSON.parse(proc.stdout.trim());
+    assert.equal(out.BM_SESSION_SECRET, 'quoted-secret');
+  } finally {
+    if (backup !== null) fs.writeFileSync(ENV_PATH, backup, 'utf8'); else rmEnv();
+  }
+});
+

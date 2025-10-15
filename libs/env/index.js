@@ -9,6 +9,20 @@ function projectRoot() {
   return path.resolve(here, '..', '..');
 }
 
+function normalizeValue(raw) {
+  if (typeof raw !== 'string') return raw;
+  const trimmed = raw.trim();
+  if (trimmed.length >= 2) {
+    const first = trimmed[0];
+    const last = trimmed[trimmed.length - 1];
+    const matchingQuote = (first === last) && (first === '"' || first === "'");
+    if (matchingQuote) {
+      return trimmed.slice(1, -1);
+    }
+  }
+  return trimmed;
+}
+
 function parseDotEnv(text) {
   const out = {};
   for (const rawLine of String(text || '').split(/\r?\n/)) {
@@ -17,10 +31,7 @@ function parseDotEnv(text) {
     const eq = line.indexOf('=');
     if (eq === -1) continue;
     const key = line.slice(0, eq).trim();
-    let val = line.slice(eq + 1).trim();
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-      val = val.slice(1, -1);
-    }
+    const val = normalizeValue(line.slice(eq + 1));
     out[key] = val;
   }
   return out;
