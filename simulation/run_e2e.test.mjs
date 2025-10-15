@@ -212,7 +212,8 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   await withStep('assert /me JSON user', async () => {
     assert.equal(r4.status, 200);
     assert.equal(r4.json.email, email);
-    assert.ok(r4.json.public_id);
+    assert.equal(typeof r4.json.public_id, 'string');
+    assert.ok(r4.json.public_id.length > 0);
     publicId = r4.json.public_id;
   });
 

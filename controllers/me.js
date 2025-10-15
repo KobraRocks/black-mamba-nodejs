@@ -11,7 +11,16 @@ export const Me = new class extends ApplicationController {
     const user = User?.find?.(uid);
     if (!user) return this.unauthorized();
 
-    return { id: Number(user.id), email: user.email, public_id: user.public_id };
+    const json = typeof user.toJSON === 'function' ? user.toJSON() : {};
+    const id = Number(json.id ?? user.id);
+    const email = json.email ?? user.email;
+    const publicId = json.public_id ?? user.public_id;
+
+    return {
+      id,
+      email: typeof email === 'string' ? email : String(email ?? ''),
+      public_id: typeof publicId === 'string' ? publicId : String(publicId ?? ''),
+    };
   }
 
   unauthorized() {

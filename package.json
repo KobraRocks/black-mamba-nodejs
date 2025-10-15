@@ -22,7 +22,7 @@
     "test:timezone": "node --test libs/timezone/test.mjs",
     "test:env": "node --test libs/env/test.mjs",
     "test:views": "node --test libs/views/test.mjs",
-    "test:controllers": "node --test controllers/test/*.test.mjs",
+    "test:controllers": "node --test controllers/test/**/*.test.mjs",
     "test:version": "node --test libs/version/test.mjs",
     "test:model": "npm run -s test:models",
     "test:models": "node --test models/test/*.test.mjs",
