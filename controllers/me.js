@@ -1,14 +1,20 @@
 import { ApplicationController } from './application.js';
-import { User } from '../models/user.js';
 
 export const Me = new class extends ApplicationController {
   resources = 'me';
 
-  index(req, res) {
+  index(req) {
     const uid = req.session?.getUserId();
-    if (!uid) return res.status(401).json({ error: 'unauthorized' });
-    const user = User.find(uid);
-    if (!user) return res.status(401).json({ error: 'unauthorized' });
+    if (!uid) return this.unauthorized();
+
+    const User = this.User ?? this.model('user');
+    const user = User?.find?.(uid);
+    if (!user) return this.unauthorized();
+
     return { id: Number(user.id), email: user.email };
+  }
+
+  unauthorized() {
+    return { _bm_response: true, status: 401, json: { error: 'unauthorized' } };
   }
 }();
