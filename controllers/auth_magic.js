@@ -99,8 +99,16 @@ export const AuthMagic = new class extends ApplicationController {
     else req.session.set?.('user_status', sessionStatus);
     if (superAdmin) req.session.set('super_admin', true);
     else req.session.unset('super_admin');
+    const redirectTo = this.consume_post_auth_redirect(req, { fallback: '/' });
     await req.session.save();
     if (isDev) console.log('[DEV][magic.callback] user_id=%d email=%s super_admin=%s', user.id, email, superAdmin);
-    return { ok: true, user: { id: Number(user.id), email: user.email, super_admin: superAdmin } };
+    if (this.prefers_signin_redirect(req)) {
+      return { _bm_response: true, status: 303, headers: { Location: redirectTo || '/' } };
+    }
+    const payload = { ok: true, user: { id: Number(user.id), email: user.email, super_admin: superAdmin }, redirect: redirectTo };
+    if (this.wants_json(req)) {
+      return { _bm_response: true, status: 200, json: payload };
+    }
+    return payload;
   }
 }();
