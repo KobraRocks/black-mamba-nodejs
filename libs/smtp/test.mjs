@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadEnvConfig, buildMessage, MailerError, dotStuff } from './index.js';
+import { loadEnvConfig, buildMessage, MailerError, dotStuff, isSmtpConfigured } from './index.js';
 
 test('loadEnvConfig reads environment and supports overrides', () => {
   const old = { ...process.env };
@@ -29,6 +29,22 @@ test('loadEnvConfig validates required variables', () => {
     delete process.env.BM_SMTP_HOST;
     delete process.env.BM_SMTP_PORT;
     assert.throws(() => loadEnvConfig(), /BM_SMTP_HOST/);
+  } finally {
+    Object.assign(process.env, old);
+  }
+});
+
+test('isSmtpConfigured detects presence of required env vars', () => {
+  const old = { ...process.env };
+  try {
+    delete process.env.BM_SMTP_HOST;
+    delete process.env.BM_SMTP_PORT;
+    assert.equal(isSmtpConfigured(), false);
+
+    process.env.BM_SMTP_HOST = 'smtp.example.com';
+    assert.equal(isSmtpConfigured(), true);
+
+    assert.equal(isSmtpConfigured({ host: 'other.local' }), true);
   } finally {
     Object.assign(process.env, old);
   }

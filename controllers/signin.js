@@ -1,5 +1,6 @@
 import { ApplicationController } from './application.js';
 import { hasSuperAdmin, getSuperAdminEmail } from '../libs/super-admin/index.js';
+import { isSmtpConfigured } from '../libs/smtp/index.js';
 
 function sanitizeNext(path) {
   const value = typeof path === 'string' ? path.trim() : '';
@@ -55,8 +56,9 @@ export const Signin = new class extends ApplicationController {
     }
 
     const isDev = /^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''));
+    const smtpReady = isSmtpConfigured();
     const assigns = {
-      dev_mode: isDev,
+      dev_mode: isDev && !smtpReady,
       next_path: nextPath,
       magic_request_path: '/auth/magic/request',
       magic_callback_path: '/auth/magic/callback',

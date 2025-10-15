@@ -3,6 +3,7 @@ import { ApplicationController } from './application.js';
 import { createMagicLink, consumeMagicLink, memoryStore } from '../libs/magick-links/src/index.js';
 import crypto from 'node:crypto';
 import { getSuperAdminEmail, hasSuperAdmin, isSuperAdmin } from '../libs/super-admin/index.js';
+import { sendMail, isSmtpConfigured } from '../libs/smtp/index.js';
 
 function keystoreFromEnv() {
   const secret = process.env.BM_MAGIC_SECRET || process.env.BM_SESSION_SECRET || 'dev-secret-change-me';
@@ -10,6 +11,50 @@ function keystoreFromEnv() {
 }
 
 const store = memoryStore();
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function hostToDomain(host = '') {
+  const value = String(host || '').trim();
+  if (!value) return 'black-mamba.local';
+  const withoutPort = value.split(':')[0] || value;
+  return withoutPort || 'black-mamba.local';
+}
+
+function buildMagicLinkEmail({ email, url, host, superAdmin }) {
+  const domain = hostToDomain(host);
+  const from = `Black Mamba <no-reply@${domain}>`;
+  const subject = 'Your Black Mamba sign-in link';
+  const textLines = [
+    'Hello,',
+    '',
+    'Use the link below to sign in to Black Mamba:',
+    url,
+    '',
+    'This link expires in 10 minutes.',
+    superAdmin ? 'This link grants super admin access.' : '',
+    '',
+    'If you did not request this email, you can safely ignore it.',
+  ].filter(Boolean);
+  const text = textLines.join('\n');
+  const urlHtml = `<a href="${escapeHtml(url)}">${escapeHtml(url)}</a>`;
+  const htmlParts = [
+    '<p>Hello,</p>',
+    `<p>Use the link below to sign in to Black Mamba:<br>${urlHtml}</p>`,
+    '<p>This link expires in 10 minutes.</p>',
+    superAdmin ? '<p><strong>This link grants super admin access.</strong></p>' : '',
+    '<p>If you did not request this email, you can safely ignore it.</p>',
+  ].filter(Boolean);
+  const html = htmlParts.join('');
+  return { from, to: email, subject, text, html };
+}
 
 export const AuthMagic = new class extends ApplicationController {
   namespace = 'auth';
@@ -23,8 +68,9 @@ export const AuthMagic = new class extends ApplicationController {
 
   #viewAssigns() {
     const isDev = /^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''));
+    const devMagicPreview = isDev && !isSmtpConfigured();
     return {
-      dev_mode: isDev,
+      dev_mode: devMagicPreview,
       request_path: '/auth/magic/request',
       callback_path: '/auth/magic/callback',
       has_super_admin: hasSuperAdmin(),
@@ -52,13 +98,31 @@ export const AuthMagic = new class extends ApplicationController {
       { baseUrl, keystore: keystoreFromEnv(), origin }
     );
     const superAdmin = isSuperAdmin(email);
-    // In dev, return the link for convenience; in prod, would send via SMTP
     const isDev = /^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''));
-    if (isDev) {
+    const smtpReady = isSmtpConfigured();
+    const shouldSendEmail = !isDev || smtpReady;
+
+    if (!shouldSendEmail) {
       console.log('[DEV][magic.request] email=%s url=%s token=%s super_admin=%s', email, url, token.slice(0, 16) + '...', superAdmin);
       return { ok: true, url, token, super_admin: superAdmin };
     }
-    return { ok: true };
+
+    try {
+      const message = buildMagicLinkEmail({ email, url, host, superAdmin });
+      const result = await sendMail(message);
+      if (result?.error) throw result.error;
+      if (isDev) {
+        console.log('[DEV][magic.request] emailed magic link to %s super_admin=%s', email, superAdmin);
+      }
+      return { ok: true };
+    } catch (err) {
+      console.error('[magic.request] failed to send magic link to %s: %s', email, err?.message || err);
+      return {
+        _bm_response: true,
+        status: 502,
+        json: { ok: false, error: 'We could not send the magic link email. Please try again.' },
+      };
+    }
   }
 
   async callback(req, _res) {
