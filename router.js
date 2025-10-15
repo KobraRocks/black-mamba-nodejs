@@ -15,11 +15,28 @@ function createPathPattern(route) {
 
 export class Router {
   #store = new Map();
+  #catalogPath = path.resolve(process.cwd(), 'route.catalog');
+  #catalog = [];
+
+  constructor(options = {}) {
+    if (options.catalogPath) this.#catalogPath = path.resolve(options.catalogPath);
+    const dir = path.dirname(this.#catalogPath);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(this.#catalogPath, '', 'utf8');
+  }
+
+  #recordRoute(method, route, action, controller) {
+    const controllerName = controller?.constructor?.name || controller?.resources || 'controller';
+    const entry = `${method} ${route} -> ${controllerName}#${action}`;
+    this.#catalog.push(entry);
+    fs.appendFileSync(this.#catalogPath, `${entry}\n`, 'utf8');
+  }
 
   #register(route, action, method, controller) {
     const pattern = createPathPattern(route);
     if (!this.#store.has(method)) this.#store.set(method, new Map());
     this.#store.get(method).set(pattern, controller.execute.bind(controller, action));
+    this.#recordRoute(method, route, action, controller);
   }
 
   register(controller) {
