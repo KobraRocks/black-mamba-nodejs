@@ -11,7 +11,8 @@ export const Me = new class extends ApplicationController {
     const user = User?.find?.(uid);
     if (!user) return this.unauthorized();
 
-    return { id: Number(user.id), email: user.email };
+    const superAdmin = !!req.session?.get?.('super_admin');
+    return { id: Number(user.id), email: user.email, super_admin: superAdmin };
   }
 
   unauthorized() {
