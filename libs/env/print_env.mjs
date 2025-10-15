@@ -5,6 +5,7 @@ const out = {
   BM_PORT: pick('BM_PORT'),
   BM_DEV: pick('BM_DEV'),
   FOO: pick('FOO'),
+  BM_SESSION_SECRET: pick('BM_SESSION_SECRET'),
 };
 console.log(JSON.stringify(out));
 
