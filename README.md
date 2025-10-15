@@ -248,6 +248,10 @@ Included Libraries
   - Entry: `libs/webauthn/index.js`
   - Demo: `node libs/webauthn/example.js`
   - Test: `node libs/webauthn/test.js`
+- Booking — tiny availability and date helpers
+  - Entry: `libs/booking/index.js`
+  - Spec: `libs/booking/SPEC.md`
+  - Test: `node --test libs/booking/test.mjs`
 - SQLite — native, dependency‑free SQLite driver (ESM)
   - Entry: `libs/sqlite/index.mjs`
   - Build: `cd libs/sqlite && node-gyp rebuild`

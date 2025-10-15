@@ -28,7 +28,10 @@ export const AuthMagic = new class extends ApplicationController {
     const host = req.headers['host'] || `localhost:${process.env.BM_PORT || 3000}`;
     const origin = `http://${host}`;
     const baseUrl = `${origin}/auth/magic/callback`;
-    const { token, url } = createMagicLink({ sub: email, purpose: 'login' }, { baseUrl, keystore: keystoreFromEnv() });
+    const { token, url } = createMagicLink(
+      { sub: email, purpose: 'login' },
+      { baseUrl, keystore: keystoreFromEnv(), origin }
+    );
     // In dev, return the link for convenience; in prod, would send via SMTP
     const isDev = /^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''));
     if (isDev) {
@@ -54,6 +57,6 @@ export const AuthMagic = new class extends ApplicationController {
     await req.session.setUser(user.id);
     await req.session.save();
     if (isDev) console.log('[DEV][magic.callback] user_id=%d email=%s', user.id, email);
-    return res.json({ ok: true, user: { id: user.id, email: user.email } });
+    return res.json({ ok: true, user: { id: Number(user.id), email: user.email } });
   }
 }();

@@ -84,11 +84,12 @@ function createResponse(req, res) {
   let headers = {};
   // Setup compression by default based on Accept-Encoding
   const { stream: outStream } = createCompression(req, res);
+  function jsonReplacer(_key, value) { return typeof value === 'bigint' ? Number(value) : value; }
   const api = {
     raw: outStream,
     status(code) { statusCode = code; return api; },
     header(name, value) { headers[name] = value; if (!res.headersSent) res.setHeader(name, value); return api; },
-    json(obj) { api.header('Content-Type', 'application/json; charset=utf-8'); return api.send(JSON.stringify(obj)); },
+    json(obj) { api.header('Content-Type', 'application/json; charset=utf-8'); return api.send(JSON.stringify(obj, jsonReplacer)); },
     text(txt) { api.header('Content-Type', 'text/plain; charset=utf-8'); return api.send(String(txt)); },
     error(err) { return api.status(500).text(err?.message || 'Internal Server Error'); },
     send(body) {
@@ -100,9 +101,9 @@ function createResponse(req, res) {
         if (Buffer.isBuffer(body) || typeof body === 'string') {
           outStream.write(body);
         } else {
-          // Fallback to JSON
+          // Fallback to JSON with BigInt-safe replacer
           api.header('Content-Type', 'application/json; charset=utf-8');
-          outStream.write(JSON.stringify(body));
+          outStream.write(JSON.stringify(body, jsonReplacer));
         }
       }
       outStream.end();

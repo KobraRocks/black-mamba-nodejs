@@ -33,15 +33,7 @@ export class Router {
       root = `/${parent}/:${parentSingular}_id/${resources}`;
     }
 
-    this.#register(root, 'index', 'GET', controller);
-    this.#register(`${root}/new`, 'new', 'GET', controller);
-    this.#register(root, 'create', 'POST', controller);
-    this.#register(`${root}/:id`, 'show', 'GET', controller);
-    this.#register(`${root}/:id/edit`, 'edit', 'GET', controller);
-    this.#register(`${root}/:id`, 'update', 'PUT', controller);
-    this.#register(`${root}/:id`, 'update', 'PATCH', controller);
-    this.#register(`${root}/:id`, 'destroy', 'DELETE', controller);
-
+    // Register custom routes first so they take precedence over generic ":id" matches
     if (controller.has_custom_routes) {
       for (const r of controller.custom_routes) {
         // Expect entries like [method, action, path]
@@ -52,6 +44,15 @@ export class Router {
         }
       }
     }
+
+    this.#register(root, 'index', 'GET', controller);
+    this.#register(`${root}/new`, 'new', 'GET', controller);
+    this.#register(root, 'create', 'POST', controller);
+    this.#register(`${root}/:id`, 'show', 'GET', controller);
+    this.#register(`${root}/:id/edit`, 'edit', 'GET', controller);
+    this.#register(`${root}/:id`, 'update', 'PUT', controller);
+    this.#register(`${root}/:id`, 'update', 'PATCH', controller);
+    this.#register(`${root}/:id`, 'destroy', 'DELETE', controller);
   }
 
   register_all(controllers) {

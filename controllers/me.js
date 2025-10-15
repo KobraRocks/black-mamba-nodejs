@@ -9,7 +9,6 @@ export const Me = new class extends ApplicationController {
     if (!uid) return res.status(401).json({ error: 'unauthorized' });
     const user = User.find(uid);
     if (!user) return res.status(401).json({ error: 'unauthorized' });
-    return { id: user.id, email: user.email };
+    return { id: Number(user.id), email: user.email };
   }
 }();
-

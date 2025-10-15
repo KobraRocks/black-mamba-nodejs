@@ -33,6 +33,8 @@ export const WebAuthn = new class extends ApplicationController {
     const reg = generateRegistrationOptions(rp, { id: String(user.id), name: user.email, displayName: user.email });
     // Persist challenge for verification
     req.session.temp('webauthn_chal_reg', reg.challenge, 300);
+    // Persist ephemeral challenge for next request
+    try { req.session.save?.(); } catch {}
     if (/^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''))) {
       console.log('[DEV][webauthn.register_options] user_id=%d challenge=%s', user.id, String(reg.challenge).slice(0, 8) + '...');
     }
@@ -76,6 +78,7 @@ export const WebAuthn = new class extends ApplicationController {
     const allowCredentials = creds.map(c => ({ type: 'public-key', id: c.credential_id }));
     const auth = generateAuthenticationOptions(rp, []);
     req.session.temp('webauthn_chal_auth', auth.challenge, 300);
+    try { req.session.save?.(); } catch {}
     // Return a minimal, JSON-friendly shape for the simulation
     if (/^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''))) {
       console.log('[DEV][webauthn.login_options] user_id=%d challenge=%s allow=%d', user.id, String(auth.challenge).slice(0, 8) + '...', allowCredentials.length);
@@ -104,7 +107,7 @@ export const WebAuthn = new class extends ApplicationController {
       if (/^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''))) {
         console.log('[DEV][webauthn.login_verify] user_id=%d cred_id=%s sign=%d', user.id, String(cred.credential_id).slice(0,8)+'...', verified.signCount);
       }
-      return res.json({ ok: true, user: { id: user.id, email: user.email } });
+      return res.json({ ok: true, user: { id: Number(user.id), email: user.email } });
     } catch (e) {
       if (/^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''))) {
         console.warn('[DEV][webauthn.login_verify] error: %s', e?.stack || e);
