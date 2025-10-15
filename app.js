@@ -95,7 +95,9 @@ function createResponse(req, res) {
     send(body) {
       if (!res.headersSent) {
         res.statusCode = statusCode;
-        res.writeHead(statusCode);
+        for (const [name, value] of Object.entries(headers)) {
+          res.setHeader(name, value);
+        }
       }
       if (body !== undefined && body !== null) {
         if (Buffer.isBuffer(body) || typeof body === 'string') {
