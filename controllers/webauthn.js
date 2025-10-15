@@ -106,7 +106,19 @@ export const WebAuthn = new class extends ApplicationController {
       // Update sign count
       this.WebauthnCredential.update(cred.id, { sign_count: verified.signCount });
       // Set session user
+      let sessionStatus = 'guest';
+      try {
+        const BookingUser = this.BookingUser ?? this.model('booking_user');
+        if (BookingUser) {
+          const guest = BookingUser.statuses?.GUEST || 'guest';
+          let profile = BookingUser.find_by?.({ user_id: cred.user_id });
+          if (!profile) profile = BookingUser.create({ user_id: cred.user_id, status: guest });
+          if (profile?.status) sessionStatus = profile.status;
+        }
+      } catch {}
       await req.session.setUser(cred.user_id);
+      if (typeof req.session.setUserStatus === 'function') req.session.setUserStatus(sessionStatus);
+      else req.session.set?.('user_status', sessionStatus);
       await req.session.save();
       const user = this.User.find(cred.user_id);
       if (/^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''))) {

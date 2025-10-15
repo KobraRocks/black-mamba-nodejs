@@ -116,6 +116,23 @@ export const Events = new class extends ApplicationController {
     if (!et || et.errors?.any?.()) {
       return { _bm_response: true, status: 422, json: { errors: et?.errors?.fullMessages?.() || ['invalid'] } };
     }
+    try {
+      const BookingUser = this.BookingUser ?? this.model('booking_user');
+      const statuses = BookingUser?.statuses || {};
+      const desired = statuses.BOOKER || 'booker';
+      if (BookingUser) {
+        let profile = BookingUser.find_by?.({ user_id: uid });
+        if (!profile) profile = BookingUser.create({ user_id: uid, status: desired });
+        else if (profile.status !== desired && profile.status !== statuses.ADMIN) {
+          profile.assign({ status: desired });
+          profile.save();
+        }
+        const status = profile?.status || desired;
+        if (typeof req.session?.setUserStatus === 'function') req.session.setUserStatus(status);
+        else req.session?.set?.('user_status', status);
+        await req.session?.save?.();
+      }
+    } catch {}
     return { _bm_response: true, status: 201, json: et.toJSON() };
   }
 
@@ -152,8 +169,9 @@ export const Events = new class extends ApplicationController {
   }
 
   management(req, _res) {
+    const guard = this.ensureBooker(req);
+    if (guard) return guard;
     const uid = req.session?.getUserId();
-    if (!uid) return { _bm_response: true, status: 401, text: 'unauthorized' };
     const ET = this.model('event_type');
     const events = ET.where({ user_id: uid }).map(e => e.toJSON());
     return this.render('management_list', { events });

@@ -77,6 +77,23 @@ export class ApplicationController {
     return false;
   }
 
+  ensureBooker(request) {
+    const session = request?.session;
+    const unauthorized = { _bm_response: true, status: 401, text: 'Sign in required' };
+    if (!session || typeof session.getUserId !== 'function' || !session.getUserId()) {
+      return unauthorized;
+    }
+    let status = null;
+    try {
+      if (typeof session.getUserStatus === 'function') status = session.getUserStatus();
+      else if (typeof session.get === 'function') status = session.get('user_status');
+    } catch {}
+    if (status !== 'booker') {
+      return { _bm_response: true, status: 403, text: 'Booker access required' };
+    }
+    return null;
+  }
+
   index (request, response) {
     return response.status(405).send("Method not allowed");
   }

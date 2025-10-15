@@ -78,6 +78,8 @@ export function createSession(opts = {}) {
       all() { return { ...record.data }; },
       setUser(userId) { record.user_id = userId; },
       getUserId() { return record.user_id ?? null; },
+      setUserStatus(status) { record.user_status = status; },
+      getUserStatus() { return record.user_status ?? null; },
       flash(key, val) {
         if (arguments.length === 2) {
           const stash = record.data.__flash || (record.data.__flash = {});

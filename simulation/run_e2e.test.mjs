@@ -381,6 +381,12 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     return et;
   });
 
+  const profileStatus = await withStep('GET /me to verify booker promotion', () => httpJson(`${base}/me`, { cookie: sid }));
+  await withStep('assert /me reports booker status', async () => {
+    assert.equal(profileStatus.status, 200);
+    assert.equal(profileStatus.json.status, 'booker');
+  });
+
   const managementShell = await withStep('GET booking management shell', async () => {
     const res = await httpText(`${base}/booking/management`, { cookie: sid });
     assert.equal(res.status, 200);
