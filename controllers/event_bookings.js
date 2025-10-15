@@ -7,6 +7,7 @@ export const EventBookings = new class extends ApplicationController {
   constructor() {
     super();
     this.custom_routes.add(['GET', 'cancel', 'cancel']);
+    this.custom_routes.add(['GET', 'management', 'management']);
   }
 
   index(req, _res) {
@@ -135,5 +136,30 @@ export const EventBookings = new class extends ApplicationController {
     } catch (e) {
       return { _bm_response: true, status: 400, text: 'invalid token' };
     }
+  }
+
+  management(req, _res) {
+    const uid = req.session?.getUserId();
+    if (!uid) return { _bm_response: true, status: 401, text: 'unauthorized' };
+    const ET = this.model('event_type');
+    const EB = this.model('event_booking');
+    const events = ET.where({ user_id: uid });
+    const eventMap = new Map(events.map(e => [Number(e.id), e]));
+    const bookings = EB.all({ order: 'starts_at ASC' })
+      .filter(b => eventMap.has(Number(b.event_type_id)))
+      .map((b) => {
+        const event = eventMap.get(Number(b.event_type_id));
+        return {
+          id: b.id,
+          invitee_name: b.invitee_name,
+          invitee_email: b.invitee_email,
+          starts_at: b.starts_at,
+          ends_at: b.ends_at,
+          status: b.status,
+          event: event ? event.toJSON?.() || event : null,
+        };
+      });
+
+    return this.render('management', { bookings });
   }
 }();

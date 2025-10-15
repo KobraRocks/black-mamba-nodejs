@@ -12,6 +12,7 @@ export const Events = new class extends ApplicationController {
     this.custom_routes.add(['GET', 'slots_slug', 's/:slug/slots']);
     // Allow HTML forms to POST updates without PUT support
     this.custom_routes.add(['POST', 'update', ':id/edit']);
+    this.custom_routes.add(['GET', 'management', 'management']);
   }
 
   index(req, _res) {
@@ -148,6 +149,14 @@ export const Events = new class extends ApplicationController {
     }
     et.destroy();
     return { _bm_response: true, status: 204 };
+  }
+
+  management(req, _res) {
+    const uid = req.session?.getUserId();
+    if (!uid) return { _bm_response: true, status: 401, text: 'unauthorized' };
+    const ET = this.model('event_type');
+    const events = ET.where({ user_id: uid }).map(e => e.toJSON());
+    return this.render('management_list', { events });
   }
 
   // HTML views
