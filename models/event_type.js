@@ -18,11 +18,8 @@ EventType.model = new ApplicationRecord.model.constructor({
 EventType.migrate = function migrate() {
   const ok = ApplicationRecord.migrate.call(this);
   try {
-    // Fire-and-forget best-effort index creation without awaiting in a sync function
-    import('../libs/sqlite/index.mjs').then(({ openSync: openDb }) => {
-      const db = openDb(process.env.BM_DATABASE || process.env.BM_SESSION_DB || ':memory:');
-      db.execSync?.(`CREATE UNIQUE INDEX IF NOT EXISTS idx_event_types_slug ON ${this.table}(slug);`);
-    }).catch(() => {});
+    const db = this.database;
+    db.execSync?.(`CREATE UNIQUE INDEX IF NOT EXISTS idx_event_types_slug ON ${this.table}(slug);`);
   } catch {}
   return ok;
 };

@@ -1,6 +1,5 @@
 import '../libs/env/index.js';
 import { ApplicationRecord } from './application.js';
-import { openSync as openDatabase } from "../libs/sqlite/index.mjs";
 
 export class WebauthnCredential extends ApplicationRecord {}
 
@@ -15,7 +14,7 @@ WebauthnCredential.model = new ApplicationRecord.model.constructor({
 // Ensure indexes (best-effort)
 WebauthnCredential.migrate = function migrate() {
   const ok = ApplicationRecord.migrate.call(this);
-  const db = openDatabase(process.env.BM_DATABASE || process.env.BM_SESSION_DB || ':memory:');
+  const db = this.database;
   db.execSync?.(`CREATE UNIQUE INDEX IF NOT EXISTS idx_webauthn_cred_id ON ${this.table}(credential_id);`);
   db.execSync?.(`CREATE INDEX IF NOT EXISTS idx_webauthn_user_id ON ${this.table}(user_id);`);
   return ok;

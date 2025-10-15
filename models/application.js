@@ -9,6 +9,10 @@ import '../libs/env/index.js';
 // Uses BM_DATABASE (or BM_SESSION_DB fallback used elsewhere in the repo)
 const DB = openDatabase(process.env.BM_DATABASE || process.env.BM_SESSION_DB || ":memory:");
 
+export function currentDatabase() {
+  return DB;
+}
+
 // Statement helper: prefer native prepared statements if available; otherwise
 // provide a minimal wrapper that executes directly via DB.* methods.
 function prepare(sql) {
@@ -233,6 +237,10 @@ export class ApplicationRecord {
   static resources = "";  // e.g. "users"
   static resource  = "";  // e.g. "user"
   static model     = new Model(); // set per subclass
+
+  static get database() {
+    return currentDatabase();
+  }
 
   static get table() {
     const resourcesName = this.resources || pluralizeWord(underscore(this.name).split('/').pop() || "");

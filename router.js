@@ -104,6 +104,10 @@ export class Router {
     const pathname = request.url.pathname;
     const method = request.method;
 
+    if (method === 'GET' && pathname === '/__up') {
+      return response.status(200).text('ok');
+    }
+
     if (this.#handle_static(request, response)) return;
 
     const methodStore = this.#store.get(method);
