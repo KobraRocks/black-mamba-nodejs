@@ -94,6 +94,24 @@ export class ApplicationController {
     return null;
   }
 
+  requireSuperAdmin(request) {
+    const session = request?.session;
+    const unauthorized = { _bm_response: true, status: 401, text: 'Sign in required' };
+    if (!session || typeof session.getUserId !== 'function' || !session.getUserId()) {
+      return unauthorized;
+    }
+    let isSuper = false;
+    try {
+      if (typeof session.get === 'function') {
+        isSuper = !!session.get('super_admin');
+      }
+    } catch {}
+    if (!isSuper) {
+      return { _bm_response: true, status: 403, text: 'Super admin access required' };
+    }
+    return null;
+  }
+
   index (request, response) {
     return response.status(405).send("Method not allowed");
   }

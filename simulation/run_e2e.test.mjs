@@ -580,6 +580,54 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     assert.equal(superMe.json.super_admin, true);
   });
 
+  const dashHtml = await withStep('GET super admin dashboard HTML', () => httpText(`${base}/super_admin`, { cookie: superSid }));
+  await withStep('assert dashboard HTML rendered', async () => {
+    if (dashHtml.status !== 200) {
+      console.error('SERVER OUTPUT:', out);
+      console.error('DASH HTML STATUS:', dashHtml.status);
+      console.error('DASH HTML BODY:', dashHtml.text);
+    }
+    assert.equal(dashHtml.status, 200);
+    assert.match(dashHtml.text, /data-bm-super-admin/);
+    assert.match(dashHtml.text, /Feature access/);
+  });
+
+  const dashJson = await withStep('GET super admin dashboard JSON', () => httpJson(`${base}/super_admin?format=json`, { cookie: superSid }));
+  await withStep('assert dashboard JSON payload', async () => {
+    if (dashJson.status !== 200) {
+      console.error('SERVER OUTPUT:', out);
+      console.error('DASH JSON ERROR:', dashJson.text);
+    }
+    assert.equal(dashJson.status, 200);
+    assert.ok(Array.isArray(dashJson.json?.features));
+    const booking = dashJson.json.features.find(f => f.key === 'booking');
+    assert.ok(booking, 'booking feature present');
+    const listing = (dashJson.json.users || []).find(u => u.id === userId);
+    assert.ok(listing, 'user listed');
+    assert.equal(listing.features?.booking?.role, 'booker');
+  });
+
+  const promote = await withStep('PATCH booking role via super admin', () => httpJson(`${base}/super_admin/users/${userId}/features/booking`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role: 'admin' }),
+    cookie: superSid,
+  }));
+  await withStep('assert booking role promotion ok', async () => {
+    assert.equal(promote.status, 200);
+    assert.equal(promote.json?.ok, true);
+    assert.equal(promote.json?.user?.features?.booking?.role, 'admin');
+    assert.ok(promote.json?.stats?.cards?.some?.(c => typeof c.value === 'number'));
+  });
+
+  const refreshed = await withStep('GET super admin dashboard JSON (post-update)', () => httpJson(`${base}/super_admin?format=json`, { cookie: superSid }));
+  await withStep('assert dashboard reflects admin role', async () => {
+    assert.equal(refreshed.status, 200);
+    const updated = (refreshed.json.users || []).find(u => u.id === userId);
+    assert.ok(updated);
+    assert.equal(updated.features?.booking?.role, 'admin');
+  });
+
   killProc();
   try { fs.rmSync(path.join(process.cwd(), 'views', 'users'), { recursive: true, force: true }); } catch {}
 });
