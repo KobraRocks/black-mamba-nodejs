@@ -119,12 +119,17 @@ export const WebAuthn = new class extends ApplicationController {
       await req.session.setUser(cred.user_id);
       if (typeof req.session.setUserStatus === 'function') req.session.setUserStatus(sessionStatus);
       else req.session.set?.('user_status', sessionStatus);
+      const redirectTo = this.consume_post_auth_redirect(req, { fallback: '/' });
       await req.session.save();
       const user = this.User.find(cred.user_id);
       if (/^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''))) {
         console.log('[DEV][webauthn.login_verify] user_id=%d cred_id=%s sign=%d', user.id, String(cred.credential_id).slice(0,8)+'...', verified.signCount);
       }
-      return { ok: true, user: { id: Number(user.id), email: user.email } };
+      const payload = { ok: true, user: { id: Number(user.id), email: user.email }, redirect: redirectTo };
+      if (this.wants_json(req)) {
+        return { _bm_response: true, status: 200, json: payload };
+      }
+      return payload;
     } catch (e) {
       if (/^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''))) {
         console.warn('[DEV][webauthn.login_verify] error: %s', e?.stack || e);

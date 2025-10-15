@@ -176,6 +176,25 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
 
   // no explicit route test here; show suffices to verify assigns
 
+  const guard = await withStep('GET booking management without auth', async () => httpText(`${base}/booking/management`));
+  await withStep('assert redirect to signin when unauthenticated', async () => {
+    assert.equal(guard.status, 303);
+    const location = guard.headers.location;
+    assert.ok(location, 'redirect should include location header');
+    assert.match(location, /\/signin/);
+    assert.match(location, /next=%2Fbooking%2Fmanagement/);
+  });
+  const signinUrl = (() => {
+    const loc = guard.headers.location || '/signin';
+    return loc.startsWith('http') ? loc : `${base}${loc}`;
+  })();
+  const signin = await withStep('GET signin page', async () => httpText(signinUrl));
+  await withStep('assert signin page renders', async () => {
+    assert.equal(signin.status, 200);
+    assert.match(signin.text, /Magic link/);
+    assert.match(signin.text, /Passkey/);
+  });
+
   // 2) Magic link request
   const email = 'e2e@example.com';
   const r2 = await withStep('POST magic link request', () => httpJson(`${base}/auth/magic/request`, {

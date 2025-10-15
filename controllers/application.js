@@ -77,11 +77,81 @@ export class ApplicationController {
     return false;
   }
 
+  prefers_signin_redirect(request) {
+    const method = String(request?.method || '').toUpperCase();
+    if (method !== 'GET' && method !== 'HEAD') return false;
+    const pathname = String(request?.url?.pathname || '');
+    if (pathname === '/signin') return false;
+    try {
+      const xhr = String(request?.headers?.['x-requested-with'] || '').toLowerCase();
+      if (xhr === 'xmlhttprequest') return false;
+    } catch {}
+    try {
+      const fetchMode = String(request?.headers?.['sec-fetch-mode'] || '').toLowerCase();
+      if (fetchMode && fetchMode !== 'navigate') return false;
+    } catch {}
+    const accept = String(request?.headers?.accept || '').toLowerCase();
+    if (accept.includes('application/json')) return false;
+    if (accept.includes('text/html')) return true;
+    if (accept.includes('application/xhtml+xml')) return true;
+    if (!accept) return false;
+    if (accept.includes('*/*')) {
+      const dest = String(request?.headers?.['sec-fetch-dest'] || '').toLowerCase();
+      if (dest === 'document') return true;
+    }
+    return false;
+  }
+
+  signin_location(request) {
+    try {
+      const url = request?.url;
+      if (!url) return '/signin';
+      const path = String(url.pathname || '/');
+      if (!path.startsWith('/')) return '/signin';
+      if (path === '/signin') return '/signin';
+      const search = String(url.search || '');
+      const current = `${path}${search}`;
+      const params = new URLSearchParams();
+      params.set('next', current);
+      return `/signin?${params.toString()}`;
+    } catch {
+      return '/signin';
+    }
+  }
+
+  consume_post_auth_redirect(request, { fallback = '/' } = {}) {
+    try {
+      const session = request?.session;
+      if (!session || typeof session.get !== 'function') return fallback;
+      const raw = session.get('post_auth_redirect');
+      if (typeof session.unset === 'function') {
+        try { session.unset('post_auth_redirect'); } catch {}
+      }
+      let path = typeof raw === 'string' ? raw : fallback;
+      if (!path || typeof path !== 'string') path = fallback;
+      if (!path.startsWith('/')) return fallback;
+      if (path === '/signin') return fallback;
+      return path;
+    } catch {
+      return fallback;
+    }
+  }
+
+  authenticationRequired(request, message = 'Sign in required') {
+    const location = this.signin_location(request);
+    if (this.prefers_signin_redirect(request)) {
+      return { _bm_response: true, status: 303, headers: { Location: location } };
+    }
+    if (this.wants_json(request)) {
+      return { _bm_response: true, status: 401, json: { error: 'unauthorized', message, redirect: location } };
+    }
+    return { _bm_response: true, status: 401, text: message };
+  }
+
   ensureBooker(request) {
     const session = request?.session;
-    const unauthorized = { _bm_response: true, status: 401, text: 'Sign in required' };
     if (!session || typeof session.getUserId !== 'function' || !session.getUserId()) {
-      return unauthorized;
+      return this.authenticationRequired(request);
     }
     let status = null;
     try {
@@ -96,9 +166,8 @@ export class ApplicationController {
 
   requireSuperAdmin(request) {
     const session = request?.session;
-    const unauthorized = { _bm_response: true, status: 401, text: 'Sign in required' };
     if (!session || typeof session.getUserId !== 'function' || !session.getUserId()) {
-      return unauthorized;
+      return this.authenticationRequired(request);
     }
     let isSuper = false;
     try {
