@@ -9,9 +9,9 @@ export const EventBookings = new class extends ApplicationController {
     this.custom_routes.add(['GET', 'cancel', 'cancel']);
   }
 
-  index(req, res) {
+  index(req, _res) {
     const uid = req.session?.getUserId();
-    if (!uid) return res.status(401).json({ error: 'unauthorized' });
+    if (!uid) return { _bm_response: true, status: 401, json: { error: 'unauthorized' } };
     const ET = this.model('event_type');
     const owned = ET.where({ user_id: uid }).map(e => Number(e.id));
     const filterType = req.url.searchParams.get('event_type_id');
@@ -20,10 +20,10 @@ export const EventBookings = new class extends ApplicationController {
     const list = EB.all({ order: 'starts_at ASC' })
       .filter(b => ids.has(Number(b.event_type_id)) && (!filterType || Number(b.event_type_id) === Number(filterType)))
       .map(b => b.toJSON());
-    return res.json(list);
+    return list;
   }
 
-  async create(req, res) {
+  async create(req, _res) {
     const body = await req.body();
     const event_type_id = Number(body?.event_type_id);
     const invitee_name = String(body?.invitee_name || '').trim();
@@ -31,11 +31,11 @@ export const EventBookings = new class extends ApplicationController {
     const start_iso = String(body?.start_iso || '').trim(); // UTC ISO start
     const time_zone = String(body?.time_zone || '');
     if (!event_type_id || !invitee_name || !invitee_email || !start_iso) {
-      return res.status(422).json({ errors: ['missing fields'] });
+      return { _bm_response: true, status: 422, json: { errors: ['missing fields'] } };
     }
     const EventType = this.model('event_type');
     const et = EventType.find(event_type_id);
-    if (!et) return res.status(404).json({ error: 'event_type not found' });
+    if (!et) return { _bm_response: true, status: 404, json: { error: 'event_type not found' } };
 
     const Booking = this.model('event_booking');
     const start = new Date(start_iso);
@@ -64,77 +64,76 @@ export const EventBookings = new class extends ApplicationController {
       minNoticeMin: et.min_notice_min,
     });
     if (!slots.includes(start.toISOString())) {
-      return res.status(409).json({ error: 'slot-unavailable' });
+      return { _bm_response: true, status: 409, json: { error: 'slot-unavailable' } };
     }
 
     const booking = new Booking({ event_type_id, invitee_name, invitee_email, starts_at: start.toISOString(), ends_at: end.toISOString(), status: 'confirmed' });
-    if (!booking.save()) return res.status(422).json({ errors: booking.errors.fullMessages() });
+    if (!booking.save()) return { _bm_response: true, status: 422, json: { errors: booking.errors.fullMessages() } };
     const secret = process.env.BM_SESSION_SECRET || 'dev-secret-change-me';
     const token = `${booking.id}.${hmacSign(String(booking.id), secret)}`;
     const payload = { ...booking.toJSON(), cancel_token: token };
-    if (this.wants_json(req)) return res.status(201).json(payload);
+    if (this.wants_json(req)) return { _bm_response: true, status: 201, json: payload };
     return this.render('success', payload);
   }
 
-  async update(req, res) {
+  async update(req, _res) {
     const uid = req.session?.getUserId();
-    if (!uid) return res.status(401).json({ error: 'unauthorized' });
+    if (!uid) return { _bm_response: true, status: 401, json: { error: 'unauthorized' } };
     const id = Number(req.params.id);
     const EB = this.model('event_booking');
     const et = this.model('event_type');
     const b = EB.find(id);
-    if (!b) return res.status(404).json({ error: 'not found' });
+    if (!b) return { _bm_response: true, status: 404, json: { error: 'not found' } };
     const owner = et.find(b.event_type_id);
-    if (!owner || owner.user_id !== uid) return res.status(403).json({ error: 'forbidden' });
+    if (!owner || owner.user_id !== uid) return { _bm_response: true, status: 403, json: { error: 'forbidden' } };
     const body = await req.body();
     if (body.start_iso) {
       const start = new Date(String(body.start_iso));
       const end = new Date(start.getTime() + owner.duration_min * 60_000);
       // verify availability
       const existing = EB.where({ event_type_id: owner.id }).filter(x => x.id !== b.id).map(x => ({ starts_at: x.starts_at, ends_at: x.ends_at }));
-      const { generateDailySlots } = await import('../libs/booking/index.js');
       const yyyy = start.toISOString().slice(0,10);
       let windows; try { const w = JSON.parse(owner.availability_json || '{}') || {}; const wd = new Date(`${yyyy}T00:00:00.000Z`).getUTCDay(); windows = w[String(wd)] || w[String(((wd+6)%7)+1)] || []; } catch { windows=[]; }
       const slots = generateDailySlots({ date: yyyy, windows, durationMin: owner.duration_min, intervalMin: owner.duration_min, tzOffset: owner.tz_offset || '+00:00', existingUtc: existing, bufferBeforeMin: owner.buffer_before_min, bufferAfterMin: owner.buffer_after_min, minNoticeMin: owner.min_notice_min, maxNoticeDays: owner.max_notice_days });
-      if (!slots.includes(start.toISOString())) return res.status(409).json({ error: 'slot-unavailable' });
+      if (!slots.includes(start.toISOString())) return { _bm_response: true, status: 409, json: { error: 'slot-unavailable' } };
       b.assign({ starts_at: start.toISOString(), ends_at: end.toISOString() });
     }
     if (body.status) b.assign({ status: String(body.status) });
-    if (!b.save()) return res.status(422).json({ errors: b.errors.fullMessages() });
-    return res.json(b.toJSON());
+    if (!b.save()) return { _bm_response: true, status: 422, json: { errors: b.errors.fullMessages() } };
+    return b.toJSON();
   }
 
-  destroy(req, res) {
+  destroy(req, _res) {
     const uid = req.session?.getUserId();
-    if (!uid) return res.status(401).json({ error: 'unauthorized' });
+    if (!uid) return { _bm_response: true, status: 401, json: { error: 'unauthorized' } };
     const id = Number(req.params.id);
     const EB = this.model('event_booking');
     const b = EB.find(id);
-    if (!b) return res.status(404).json({ error: 'not found' });
+    if (!b) return { _bm_response: true, status: 404, json: { error: 'not found' } };
     const ET = this.model('event_type');
     const et = ET.find(b.event_type_id);
-    if (!et || et.user_id !== uid) return res.status(403).json({ error: 'forbidden' });
+    if (!et || et.user_id !== uid) return { _bm_response: true, status: 403, json: { error: 'forbidden' } };
     b.destroy();
-    return res.status(204).send();
+    return { _bm_response: true, status: 204 };
   }
-  
-  cancel(req, res) {
+
+  cancel(req, _res) {
     const token = req.url.searchParams.get('token') || '';
-    if (!token) return res.status(400).text('missing token');
+    if (!token) return { _bm_response: true, status: 400, text: 'missing token' };
     try {
       const [idStr, sig] = String(token).split('.');
       const id = Number(idStr);
-      if (!id || !sig) return res.status(400).text('invalid token');
+      if (!id || !sig) return { _bm_response: true, status: 400, text: 'invalid token' };
       const secret = process.env.BM_SESSION_SECRET || 'dev-secret-change-me';
-      if (!hmacVerify(idStr, sig, secret)) return res.status(403).text('invalid signature');
+      if (!hmacVerify(idStr, sig, secret)) return { _bm_response: true, status: 403, text: 'invalid signature' };
       const EB = this.model('event_booking');
       const b = EB.find(id);
-      if (!b) return res.status(404).text('not found');
+      if (!b) return { _bm_response: true, status: 404, text: 'not found' };
       b.assign({ status: 'canceled' });
       b.save();
       return this.render('cancelled', b.toJSON());
     } catch (e) {
-      return res.status(400).text('invalid token');
+      return { _bm_response: true, status: 400, text: 'invalid token' };
     }
   }
 }();
