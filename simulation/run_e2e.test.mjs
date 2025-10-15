@@ -5,9 +5,11 @@ import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import http from 'node:http';
 
 const { sha256 } = await import('../libs/webauthn/crypto-utils.js');
 const { base64url } = await import('../libs/webauthn/base64url.js');
+const { hmacSign } = await import('../libs/session/crypto.js');
 
 function freePort() { return 4100 + Math.floor(Math.random() * 300); }
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -58,6 +60,26 @@ async function httpJson(url, { method = 'GET', headers = {}, body, cookie } = {}
   try { json = JSON.parse(text); } catch { json = text; }
   const setCookie = res.headers.get('set-cookie');
   return { status: res.status, json, setCookie, text };
+}
+
+async function httpText(url, { headers = {} } = {}) {
+  const target = new URL(url);
+  return new Promise((resolve, reject) => {
+    const req = http.request({
+      hostname: target.hostname,
+      port: target.port,
+      path: target.pathname + target.search,
+      method: 'GET',
+      headers: { Accept: 'text/html', ...headers },
+    }, (res) => {
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode || 0, text: data, headers: res.headers }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
 }
 
 // Minimal CBOR encoder for our needs
@@ -186,9 +208,12 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
 
   // 4) Protected route
   const r4 = await withStep('GET /me JSON (protected)', () => httpJson(`${base}/me`, { cookie: sid }));
+  let publicId;
   await withStep('assert /me JSON user', async () => {
     assert.equal(r4.status, 200);
     assert.equal(r4.json.email, email);
+    assert.ok(r4.json.public_id);
+    publicId = r4.json.public_id;
   });
 
   // 5) WebAuthn registration
@@ -356,34 +381,93 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     return { slots: s, firstSlot: fs };
   });
 
-  // 11) Create a booking on the first slot as a guest
-  const bookRes = await withStep('POST create booking (guest)', () => httpJson(`${base}/event_bookings`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      event_type_id: eventType.id,
-      invitee_name: 'Alice',
-      invitee_email: 'alice@example.com',
-      start_iso: firstSlot,
-      time_zone: 'UTC'
-    })
-  }));
-  const { bookingId, cancelToken } = await withStep('assert booking created', async () => {
-    assert.equal(bookRes.status, 201);
-    assert.ok(bookRes.json?.id);
-    const bid = bookRes.json.id;
-    const token = bookRes.json?.cancel_token;
-    assert.ok(token);
-    return { bookingId: bid, cancelToken: token };
+  // 11) Complete booking flow via public endpoints
+  const bookingBase = `${base}/booking/${encodeURIComponent(publicId)}/${encodeURIComponent(eventType.slug)}`;
+  const inviteeEmail = 'guest@example.com';
+
+  const bookingResponse = await withStep('GET booking landing page', async () => httpText(bookingBase), {
+    timeoutMs: 5000,
+    onTimeout: () => { console.error('SERVER OUTPUT:', out); }
+  });
+  await withStep('assert booking landing status', async () => {
+    assert.equal(bookingResponse.status, 200);
+  });
+  const bookingLanding = bookingResponse.text;
+  await withStep('assert booking landing markup', async () => {
+    assert.match(bookingLanding, /data-bm-booking/);
   });
 
+  const monthCurrent = await withStep('GET booking month current view', async () => {
+    const res = await httpText(`${bookingBase}?month=current`);
+    assert.equal(res.status, 200);
+    return res.text;
+  });
+  await withStep('assert month current view rendered', async () => {
+    assert.match(monthCurrent, /bm-month/);
+  });
+
+  const [tomYear, tomMonth, tomDay] = tomorrow.split('-');
+  const specificMonth = await withStep('GET booking month target view', async () => {
+    const res = await httpText(`${bookingBase}?month=${Number(tomMonth)}&year=${tomYear}`);
+    assert.equal(res.status, 200);
+    return res.text;
+  });
+  await withStep('assert month target includes day', async () => {
+    assert.match(specificMonth, new RegExp(`data-day="${Number(tomDay)}"`));
+  });
+
+  const dayHtml = await withStep('GET booking day view', async () => {
+    const res = await httpText(`${bookingBase}?month=${Number(tomMonth)}&year=${tomYear}&day=${Number(tomDay)}`);
+    assert.equal(res.status, 200);
+    return res.text;
+  });
+  await withStep('assert day view lists slots', async () => {
+    assert.match(dayHtml, /data-bm-slot/);
+  });
+
+  const contactHtml = await withStep('GET booking contact view', async () => {
+    const res = await httpText(`${bookingBase}/contact?month=${Number(tomMonth)}&year=${tomYear}&day=${Number(tomDay)}&start=${encodeURIComponent(firstSlot)}`);
+    assert.equal(res.status, 200);
+    return res.text;
+  });
+  await withStep('assert contact view renders form', async () => {
+    assert.match(contactHtml, /bm-contact__form/);
+  });
+
+  const submitRes = await withStep('POST booking contact submit', async () => {
+    const res = await fetch(`${bookingBase}/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'text/html' },
+      body: JSON.stringify({
+        first_name: 'Guest',
+        last_name: 'Example',
+        email: inviteeEmail,
+        notes: 'Excited to chat',
+        start_iso: firstSlot,
+        time_zone: 'UTC'
+      })
+    });
+    const text = await res.text();
+    return { status: res.status, text };
+  });
+  await withStep('assert booking flow confirmation', async () => {
+    assert.equal(submitRes.status, 200);
+    assert.match(submitRes.text, /You're booked!/);
+  });
+
+  let bookingId;
+  let cancelToken;
   // 12) Ensure the organizer can list the booking
   const listRes = await withStep('GET organizer bookings list', () => httpJson(`${base}/event_bookings`, { cookie: sid }));
   await withStep('assert booking appears in list', async () => {
     assert.equal(listRes.status, 200);
     const listed = Array.isArray(listRes.json) ? listRes.json : [];
-    assert.ok(listed.find(b => b.id === bookingId));
+    const bookingRow = listed.find(b => b.invitee_email === inviteeEmail);
+    assert.ok(bookingRow);
+    bookingId = bookingRow.id;
   });
+  const cancelSecret = process.env.BM_SESSION_SECRET || 'dev-secret-change-me';
+  cancelToken = `${bookingId}.${hmacSign(String(bookingId), cancelSecret)}`;
 
   // 13) Prevent double-booking the same slot
   const doubleRes = await withStep('POST double-book same slot', () => httpJson(`${base}/event_bookings`, {

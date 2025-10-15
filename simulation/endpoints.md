@@ -45,3 +45,18 @@ WebAuthn
 Notes
 - In dev/test, binary fields can be represented as base64url strings. The server will accept these and convert appropriately for the verification helpers.
 
+Booking
+- GET `/booking/:booker_public_id/:slug`
+  - Returns the interactive booking page for an event type owned by the organizer identified by `booker_public_id`.
+  - The HTML bootstraps the client workflow and loads the month view asynchronously.
+- GET `/booking/:booker_public_id/:slug?month=current`
+  - Renders the month calendar fragment (HTML) showing available days for the current month in the organizer timezone.
+- GET `/booking/:booker_public_id/:slug?month=10&year=2025&day=13`
+  - Renders the list of available time slots for the requested day.
+- GET `/booking/:booker_public_id/:slug/contact?month=10&year=2025&day=13&start=UTC_ISO`
+  - Renders the contact form fragment summarising the selected slot.
+- POST `/booking/:booker_public_id/:slug/contact`
+  - Body: `{ first_name, last_name?, email, notes?, start_iso, time_zone? }`
+  - Creates the booking when the slot is still free, sends ICS invitations to invitee and organizer, and responds with an HTML confirmation block.
+
+
