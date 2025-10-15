@@ -25,3 +25,8 @@ Inspire from the simplicity and clarity of RAILS
 
 In `simulation/` folder we test E2E scenario by running the server to test prod like scenario.
 Each new feature must be included in scenario.
+
+## Application Controllers
+
+The ApplicationController class implements for instances `instance.execute()` called internally to execute the action controller method, get the result and eventually pass it to a view.
+A good example of a controller implementation is controllers/users.js
