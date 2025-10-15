@@ -349,4 +349,13 @@ export async function sendMail(
   });
 }
 
+export function isSmtpConfigured(overrides = {}) {
+  try {
+    const cfg = loadEnvConfig(overrides);
+    return Boolean(cfg?.host);
+  } catch {
+    return false;
+  }
+}
+
 export { MailerError, loadEnvConfig };

@@ -1,1 +1,1 @@
-export { sendMail, buildMessage, MailerError, loadEnvConfig, dotStuff } from './smtp.js';
+export { sendMail, buildMessage, MailerError, loadEnvConfig, dotStuff, isSmtpConfigured } from './smtp.js';
