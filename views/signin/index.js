@@ -116,11 +116,7 @@ export default function signinIndexView({ assigns }) {
           passkeyStatus.textContent = message || '';
         }
 
-        function copyToClipboard(text) {
-          if (!text) return Promise.resolve(false);
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            return navigator.clipboard.writeText(text).then(() => true).catch(() => false);
-          }
+        function legacyCopy(text) {
           return new Promise((resolve) => {
             try {
               const input = document.createElement('textarea');
@@ -137,6 +133,17 @@ export default function signinIndexView({ assigns }) {
               resolve(false);
             }
           });
+        }
+
+        function copyToClipboard(text) {
+          if (!text) return Promise.resolve(false);
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard
+              .writeText(text)
+              .then(() => true)
+              .catch(() => legacyCopy(text));
+          }
+          return legacyCopy(text);
         }
 
         if (copyBtn) {
@@ -159,8 +166,14 @@ export default function signinIndexView({ assigns }) {
         if (openBtn) {
           openBtn.addEventListener('click', (event) => {
             event.preventDefault();
-            if (!lastUrl) return;
-            window.location.href = lastUrl;
+            const url = lastUrl || devUrl?.href || '';
+            if (!url) return;
+            if (typeof window.open === 'function') {
+              const popup = window.open(url, '_blank', 'noopener');
+              if (!popup) window.location.href = url;
+            } else {
+              window.location.href = url;
+            }
           });
         }
 
