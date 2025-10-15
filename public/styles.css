@@ -24,6 +24,228 @@ body.bm-body {
   padding: 2rem 1rem;
 }
 
+.bm-admin {
+  width: 100%;
+  max-width: 1120px;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.bm-admin__header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bm-admin__badge {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-accent);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bm-admin__title {
+  font-size: 2.4rem;
+  margin: 0;
+  color: var(--color-secondary);
+}
+
+.bm-admin__subtitle {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--color-muted);
+}
+
+.bm-admin__flash {
+  min-height: 1.5rem;
+  font-size: 0.95rem;
+  color: var(--color-secondary);
+}
+
+.bm-admin__flash[data-variant="success"] {
+  color: var(--color-highlight);
+}
+
+.bm-admin__flash[data-variant="error"] {
+  color: #c0392b;
+}
+
+.bm-admin__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.bm-admin__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.5rem;
+}
+
+.bm-admin__card {
+  background: linear-gradient(180deg, rgba(42, 110, 242, 0.08), rgba(42, 110, 242, 0.02));
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bm-admin__card-value {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--color-secondary);
+}
+
+.bm-admin__card-label {
+  font-size: 0.95rem;
+  color: var(--color-muted);
+}
+
+.bm-admin__breakdown {
+  background: #f8fafc;
+  border-radius: 20px;
+  padding: 1.75rem;
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.bm-admin__breakdown-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.bm-admin__breakdown-title {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--color-secondary);
+}
+
+.bm-admin__breakdown-description {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-muted);
+}
+
+.bm-admin__breakdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem 1.5rem;
+}
+
+.bm-admin__breakdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bm-admin__breakdown-count {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-secondary);
+}
+
+.bm-admin__breakdown-label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+}
+
+.bm-admin__table {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bm-admin__table-title {
+  margin: 0;
+  font-size: 1.4rem;
+  color: var(--color-secondary);
+}
+
+.bm-admin__table-wrapper {
+  overflow-x: auto;
+}
+
+.bm-admin__grid {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.bm-admin__grid thead {
+  background: rgba(42, 110, 242, 0.08);
+}
+
+.bm-admin__grid th,
+.bm-admin__grid td {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.bm-admin__grid th {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+}
+
+.bm-admin__grid tbody tr:last-child th,
+.bm-admin__grid tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.bm-admin__select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.bm-admin__select-label {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.bm-admin__select-control {
+  appearance: none;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+  background: #ffffff;
+  color: var(--color-secondary);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.bm-admin__select-control:focus {
+  outline: 2px solid rgba(42, 110, 242, 0.5);
+  outline-offset: 2px;
+}
+
 .bm-booking {
   width: 100%;
   max-width: 960px;

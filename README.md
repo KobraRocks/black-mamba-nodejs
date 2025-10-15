@@ -60,6 +60,13 @@ BM_MIGRATE=1 npm start                 # explicitly run migrations, then start
 - `/booking/:public_id/:slug?month=MM&year=YYYY&day=DD` renders the slot picker for a day.
 - `/booking/:public_id/:slug/contact?...` shows the contact form; `POST`ing to the same path confirms the booking and emails ICS invites to both organizer and invitee.
 
+### Super Admin Dashboard
+
+- Sign in with the email configured in `BM_SUPER_ADMIN` to unlock `/super_admin`.
+- Review product usage at a glance with live cards for booking organizers, event types, and bookings.
+- Assign feature-specific roles (starting with Booking) to any user without leaving the dashboard.
+- All interactions are JSON-powered so the UI stays responsive as future feature modules are added.
+
 `.env` example
 ```
 BM_DEV=true
