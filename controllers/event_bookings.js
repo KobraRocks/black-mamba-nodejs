@@ -139,8 +139,9 @@ export const EventBookings = new class extends ApplicationController {
   }
 
   management(req, _res) {
+    const guard = this.ensureBooker(req);
+    if (guard) return guard;
     const uid = req.session?.getUserId();
-    if (!uid) return { _bm_response: true, status: 401, text: 'unauthorized' };
     const ET = this.model('event_type');
     const EB = this.model('event_booking');
     const events = ET.where({ user_id: uid });

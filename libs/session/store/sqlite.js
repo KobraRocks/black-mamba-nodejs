@@ -13,6 +13,7 @@ export function SQLiteStore(dbPath = process.env.BM_SESSION_DB || process.env.BM
             id TEXT PRIMARY KEY,
             user_id TEXT,
             device_id TEXT,
+            user_status TEXT,
             data TEXT NOT NULL,
             exp INTEGER NOT NULL,
             tmp TEXT,
@@ -24,6 +25,9 @@ export function SQLiteStore(dbPath = process.env.BM_SESSION_DB || process.env.BM
           CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
           CREATE INDEX IF NOT EXISTS idx_sessions_device ON sessions(device_id);
         `);
+        try {
+          await d.exec('ALTER TABLE sessions ADD COLUMN user_status TEXT');
+        } catch {}
         return d;
       })();
     }
@@ -33,14 +37,15 @@ export function SQLiteStore(dbPath = process.env.BM_SESSION_DB || process.env.BM
   return {
     async get(id) {
       const d = await db();
-      const row = await d.get('SELECT data, exp, tmp, user_id, device_id FROM sessions WHERE id=?', [id]);
+      const row = await d.get('SELECT data, exp, tmp, user_id, device_id, user_status FROM sessions WHERE id=?', [id]);
       if (!row) return null;
       return {
         data: safeJSON(row.data) || {},
         exp: Number(row.exp) || null,
         tmp: safeJSON(row.tmp) || {},
         user_id: row.user_id || null,
-        device_id: row.device_id || null
+        device_id: row.device_id || null,
+        user_status: row.user_status || null
       };
     },
     async set(id, record) {
@@ -50,18 +55,20 @@ export function SQLiteStore(dbPath = process.env.BM_SESSION_DB || process.env.BM
       const exp = Number(record.exp) || 0;
       const user_id = record.user_id ?? null;
       const device_id = record.device_id ?? null;
+      const user_status = record.user_status ?? null;
       await d.run(
-        `INSERT INTO sessions(id, user_id, device_id, data, exp, tmp, updated_at, last_access)
-         VALUES(?,?,?,?,?,?, strftime('%s','now'), strftime('%s','now'))
+        `INSERT INTO sessions(id, user_id, device_id, user_status, data, exp, tmp, updated_at, last_access)
+         VALUES(?,?,?,?,?,?,?, strftime('%s','now'), strftime('%s','now'))
          ON CONFLICT(id) DO UPDATE SET
            user_id=excluded.user_id,
            device_id=excluded.device_id,
+           user_status=excluded.user_status,
            data=excluded.data,
            exp=excluded.exp,
            tmp=excluded.tmp,
            updated_at=strftime('%s','now'),
            last_access=strftime('%s','now')`,
-        [id, user_id, device_id, data, exp, tmp]
+        [id, user_id, device_id, user_status, data, exp, tmp]
       );
     },
     async destroy(id) {

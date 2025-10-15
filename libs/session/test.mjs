@@ -57,3 +57,20 @@ test('session persists across requests via cookie and is_anonymous=false', async
   assert.equal(req2.session.is_anonymous, false);
   assert.equal(req2.session.get('email'), 'user@example.com');
 });
+
+test('session persists user status across requests', async () => {
+  const store = SQLiteStore(':memory:');
+  const mw = createSession({ secret: 'supersecret_dev_secret_12345', ttl: 60, store });
+  const req1 = { headers: {} };
+  const res1 = mockRes();
+  await mw.attach(req1, res1);
+  req1.session.setUser(99);
+  req1.session.setUserStatus('booker');
+  await req1.session.save();
+  const cookieHeader = String(res1.getHeader('Set-Cookie') || '').split(',')[0];
+  const req2 = { headers: { cookie: cookieHeader } };
+  const res2 = mockRes();
+  await mw.attach(req2, res2);
+  assert.equal(Number(req2.session.getUserId()), 99);
+  assert.equal(req2.session.getUserStatus(), 'booker');
+});

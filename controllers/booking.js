@@ -75,10 +75,10 @@ export const Booking = new class extends ApplicationController {
   }
 
   #requireBookerSession(req) {
+    const guard = this.ensureBooker(req);
+    if (guard) return { error: guard };
+
     const uid = req.session?.getUserId();
-    if (!uid) {
-      return { error: { _bm_response: true, status: 401, text: 'Sign in required' } };
-    }
 
     const User = this.model('user');
     const EventType = this.model('event_type');

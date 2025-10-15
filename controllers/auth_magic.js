@@ -56,7 +56,28 @@ export const AuthMagic = new class extends ApplicationController {
     const superAdmin = isSuperAdmin(email);
     let user = this.User.find_by({ email });
     if (!user) user = this.User.create({ email });
+    let sessionStatus = 'guest';
+    try {
+      const BookingUser = this.BookingUser ?? this.model('booking_user');
+      if (BookingUser) {
+        const statuses = BookingUser.statuses || {};
+        const guest = statuses.GUEST || 'guest';
+        const admin = statuses.ADMIN || 'admin';
+        let profile = BookingUser.find_by?.({ user_id: user.id });
+        if (!profile) {
+          const initial = superAdmin ? admin : guest;
+          profile = BookingUser.create({ user_id: user.id, status: initial });
+        } else if (superAdmin && profile.status !== admin) {
+          profile.assign({ status: admin });
+          profile.save();
+        }
+        if (profile?.status) sessionStatus = profile.status;
+        else sessionStatus = superAdmin ? admin : guest;
+      }
+    } catch {}
     await req.session.setUser(user.id);
+    if (typeof req.session.setUserStatus === 'function') req.session.setUserStatus(sessionStatus);
+    else req.session.set?.('user_status', sessionStatus);
     if (superAdmin) req.session.set('super_admin', true);
     else req.session.unset('super_admin');
     await req.session.save();
