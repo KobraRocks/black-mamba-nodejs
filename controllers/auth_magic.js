@@ -2,7 +2,7 @@ import '../libs/env/index.js';
 import { ApplicationController } from './application.js';
 import { createMagicLink, consumeMagicLink, memoryStore } from '../libs/magick-links/src/index.js';
 import crypto from 'node:crypto';
-import { isSuperAdmin } from '../libs/super-admin/index.js';
+import { getSuperAdminEmail, hasSuperAdmin, isSuperAdmin } from '../libs/super-admin/index.js';
 
 function keystoreFromEnv() {
   const secret = process.env.BM_MAGIC_SECRET || process.env.BM_SESSION_SECRET || 'dev-secret-change-me';
@@ -19,6 +19,25 @@ export const AuthMagic = new class extends ApplicationController {
     super();
     this.custom_routes.add(['POST', 'request_link', 'request']);
     this.custom_routes.add(['GET', 'callback', 'callback']);
+  }
+
+  #viewAssigns() {
+    const isDev = /^(1|true|yes)$/i.test(String(process.env.BM_DEV || ''));
+    return {
+      dev_mode: isDev,
+      request_path: '/auth/magic/request',
+      callback_path: '/auth/magic/callback',
+      has_super_admin: hasSuperAdmin(),
+      super_admin_email: getSuperAdminEmail()
+    };
+  }
+
+  index(_req, _res) {
+    return this.render('new', this.#viewAssigns());
+  }
+
+  new(_req, _res) {
+    return this.#viewAssigns();
   }
 
   async request_link(req, _res) {
