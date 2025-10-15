@@ -3,6 +3,7 @@ Proposed Data Models
 users
 - id: INTEGER PK
 - email: TEXT NOT NULL UNIQUE
+- public_id: TEXT NOT NULL UNIQUE           // exposed identifier for booking links
 - created_at: TEXT NOT NULL
 - updated_at: TEXT NOT NULL
 

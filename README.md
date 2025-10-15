@@ -53,6 +53,13 @@ npm start                              # no migrations by default
 BM_MIGRATE=1 npm start                 # explicitly run migrations, then start
 ```
 
+### Booking Flow (public invite)
+
+- Organizers share `/booking/:public_id/:slug` pages. The HTML shell loads the month grid, day slots, and contact form fragments asynchronously.
+- `/booking/:public_id/:slug?month=current` returns the month view. Pass `month`/`year` query params to navigate.
+- `/booking/:public_id/:slug?month=MM&year=YYYY&day=DD` renders the slot picker for a day.
+- `/booking/:public_id/:slug/contact?...` shows the contact form; `POST`ing to the same path confirms the booking and emails ICS invites to both organizer and invitee.
+
 `.env` example
 ```
 BM_DEV=true
