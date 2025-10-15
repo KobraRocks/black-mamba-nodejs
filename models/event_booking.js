@@ -27,11 +27,9 @@ EventBooking.model = new ApplicationRecord.model.constructor({
 EventBooking.migrate = function migrate() {
   const ok = ApplicationRecord.migrate.call(this);
   try {
-    import('../libs/sqlite/index.mjs').then(({ openSync: openDb }) => {
-      const db = openDb(process.env.BM_DATABASE || process.env.BM_SESSION_DB || ':memory:');
-      db.execSync?.(`CREATE INDEX IF NOT EXISTS idx_event_bookings_type ON ${this.table}(event_type_id);`);
-      db.execSync?.(`CREATE INDEX IF NOT EXISTS idx_event_bookings_time ON ${this.table}(starts_at, ends_at);`);
-    }).catch(() => {});
+    const db = this.database;
+    db.execSync?.(`CREATE INDEX IF NOT EXISTS idx_event_bookings_type ON ${this.table}(event_type_id);`);
+    db.execSync?.(`CREATE INDEX IF NOT EXISTS idx_event_bookings_time ON ${this.table}(starts_at, ends_at);`);
   } catch {}
   return ok;
 };
