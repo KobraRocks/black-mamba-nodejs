@@ -71,6 +71,41 @@ export const Booking = new class extends ApplicationController {
     this.custom_routes.add(['GET', 'page', ':booker_public_id/:slug']);
     this.custom_routes.add(['GET', 'contact', ':booker_public_id/:slug/contact']);
     this.custom_routes.add(['POST', 'submit', ':booker_public_id/:slug/contact']);
+    this.custom_routes.add(['GET', 'management', 'management']);
+  }
+
+  #requireBookerSession(req) {
+    const uid = req.session?.getUserId();
+    if (!uid) {
+      return { error: { _bm_response: true, status: 401, text: 'Sign in required' } };
+    }
+
+    const User = this.model('user');
+    const EventType = this.model('event_type');
+    if (!User || !EventType) {
+      return { error: { _bm_response: true, status: 500, text: 'Booking models unavailable' } };
+    }
+
+    const booker = User.find(uid);
+    if (!booker) {
+      return { error: { _bm_response: true, status: 403, text: 'Booker not found' } };
+    }
+
+    const eventTypes = EventType.where({ user_id: uid }).map(e => e.toJSON());
+
+    return { booker: booker.toJSON ? booker.toJSON() : { ...booker }, eventTypes };
+  }
+
+  management(req, _res) {
+    const ctx = this.#requireBookerSession(req);
+    if (ctx?.error) return ctx.error;
+
+    return this.render('management', {
+      booker: ctx.booker,
+      eventTypes: ctx.eventTypes,
+      eventsUrl: '/events/management',
+      bookingsUrl: '/event_bookings/management',
+    });
   }
 
   #context(req) {

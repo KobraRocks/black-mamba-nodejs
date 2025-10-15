@@ -62,15 +62,17 @@ async function httpJson(url, { method = 'GET', headers = {}, body, cookie } = {}
   return { status: res.status, json, setCookie, text };
 }
 
-async function httpText(url, { headers = {} } = {}) {
+async function httpText(url, { headers = {}, cookie } = {}) {
   const target = new URL(url);
+  const headerBag = { Accept: 'text/html', ...headers };
+  if (cookie) headerBag['Cookie'] = `bm.sid=${cookie}`;
   return new Promise((resolve, reject) => {
     const req = http.request({
       hostname: target.hostname,
       port: target.port,
       path: target.pathname + target.search,
       method: 'GET',
-      headers: { Accept: 'text/html', ...headers },
+      headers: headerBag,
     }, (res) => {
       let data = '';
       res.setEncoding('utf8');
@@ -220,7 +222,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     assert.ok(r4.json.public_id.length > 0);
     publicId = r4.json.public_id;
 
-    assert.equal(r4.json.super_admin, false);
+    assert.equal(Boolean(r4.json.super_admin), false);
 
   });
 
@@ -331,7 +333,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   await withStep('assert /me after login', async () => {
     assert.equal(r7.status, 200);
     assert.equal(r7.json.email, email);
-    assert.equal(r7.json.super_admin, false);
+    assert.equal(Boolean(r7.json.super_admin), false);
   });
 
   // 8) Verify logged-in JSON endpoint still works
@@ -377,6 +379,35 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     const et = createEventRes.json;
     assert.ok(et?.id);
     return et;
+  });
+
+  const managementShell = await withStep('GET booking management shell', async () => {
+    const res = await httpText(`${base}/booking/management`, { cookie: sid });
+    assert.equal(res.status, 200);
+    return res.text;
+  });
+  await withStep('assert management shell markup', async () => {
+    assert.match(managementShell, /data-bm-management/);
+    assert.match(managementShell, /Organizer workspace/);
+  });
+
+  const managementEvents = await withStep('GET management events fragment', async () => {
+    const res = await httpText(`${base}/events/management`, { cookie: sid });
+    assert.equal(res.status, 200);
+    return res.text;
+  });
+  await withStep('assert management events fragment', async () => {
+    assert.match(managementEvents, /bm-management__list/);
+    assert.match(managementEvents, /Intro Call 30m/);
+  });
+
+  const managementBookings = await withStep('GET management bookings fragment', async () => {
+    const res = await httpText(`${base}/event_bookings/management`, { cookie: sid });
+    assert.equal(res.status, 200);
+    return res.text;
+  });
+  await withStep('assert management bookings fragment', async () => {
+    assert.match(managementBookings, /No bookings yet/);
   });
 
   // 10) Query available slots for tomorrow
