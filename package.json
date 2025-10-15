@@ -21,6 +21,7 @@
     "test:booking": "node --test libs/booking/test.mjs",
     "test:timezone": "node --test libs/timezone/test.mjs",
     "test:env": "node --test libs/env/test.mjs",
+    "test:super-admin": "node --test libs/super-admin/test.mjs",
     "test:views": "node --test libs/views/test.mjs",
     "test:controllers": "node --test controllers/test/**/*.test.mjs",
     "test:version": "node --test libs/version/test.mjs",

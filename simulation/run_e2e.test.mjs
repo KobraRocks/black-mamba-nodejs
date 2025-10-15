@@ -135,7 +135,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   const port = freePort();
   const base = `http://localhost:${port}`;
 
-  const env = { ...process.env, BM_DEV: 'true', BM_MIGRATE: '1', BM_DATABASE: dbFile, BM_PORT: String(port) };
+  const env = { ...process.env, BM_DEV: 'true', BM_MIGRATE: '1', BM_DATABASE: dbFile, BM_PORT: String(port), BM_SUPER_ADMIN: 'boss@example.com' };
   const appPath = path.join(process.cwd(), 'app.js');
   // no fixtures needed; a Pages controller and views are included in repo
   const proc = spawn(process.execPath, [appPath], { cwd: process.cwd(), env });
@@ -181,7 +181,10 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email })
   }));
-  await withStep('assert magic link request ok', async () => { assert.equal(r2.status, 200); });
+  await withStep('assert magic link request ok', async () => {
+    assert.equal(r2.status, 200);
+    assert.equal(Boolean(r2.json?.super_admin), false);
+  });
   let token, url;
   if (r2.json && r2.json.token && r2.json.url) {
     token = r2.json.token; url = r2.json.url;
@@ -202,6 +205,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     const s = parseSidFromSetCookie(r3.setCookie);
     assert.ok(s);
     assert.equal(r3.json.user.email, email);
+    assert.equal(r3.json.user.super_admin, false);
     return s;
   });
   const userId = r3.json.user.id;
@@ -215,6 +219,9 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     assert.equal(typeof r4.json.public_id, 'string');
     assert.ok(r4.json.public_id.length > 0);
     publicId = r4.json.public_id;
+
+    assert.equal(r4.json.super_admin, false);
+
   });
 
   // 5) WebAuthn registration
@@ -324,6 +331,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   await withStep('assert /me after login', async () => {
     assert.equal(r7.status, 200);
     assert.equal(r7.json.email, email);
+    assert.equal(r7.json.super_admin, false);
   });
 
   // 8) Verify logged-in JSON endpoint still works
@@ -495,6 +503,44 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     const b2 = (Array.isArray(listRes2.json) ? listRes2.json : []).find(b => b.id === bookingId);
     assert.ok(b2);
     assert.equal(b2.status, 'canceled');
+  });
+
+  // 16) Super admin magic link flow
+  const superEmail = 'boss@example.com';
+  const superReq = await withStep('POST magic link request (super admin)', () => httpJson(`${base}/auth/magic/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: superEmail })
+  }));
+  await withStep('assert super admin magic request ok', async () => {
+    assert.equal(superReq.status, 200);
+    assert.equal(superReq.json?.super_admin, true);
+  });
+
+  let superToken;
+  if (superReq.json && superReq.json.token && superReq.json.url) {
+    superToken = superReq.json.token;
+  } else {
+    const { createMagicLink } = await import('../libs/magick-links/src/index.js');
+    const { token: t } = createMagicLink({ sub: superEmail, purpose: 'login' }, { baseUrl: `${base}/auth/magic/callback`, keystore: { current: { kid: 'v1', key: crypto.createHash('sha256').update('dev-secret-change-me').digest() } } });
+    superToken = t;
+  }
+
+  const superCallback = await withStep('GET super admin magic callback', () => httpJson(`${base}/auth/magic/callback?token=${encodeURIComponent(superToken)}`));
+  const superSid = await withStep('assert super admin callback ok', async () => {
+    assert.equal(superCallback.status, 200);
+    const cookie = parseSidFromSetCookie(superCallback.setCookie);
+    assert.ok(cookie);
+    assert.equal(superCallback.json.user.email, superEmail);
+    assert.equal(superCallback.json.user.super_admin, true);
+    return cookie;
+  });
+
+  const superMe = await withStep('GET /me as super admin', () => httpJson(`${base}/me`, { cookie: superSid }));
+  await withStep('assert /me reports super admin', async () => {
+    assert.equal(superMe.status, 200);
+    assert.equal(superMe.json.email, superEmail);
+    assert.equal(superMe.json.super_admin, true);
   });
 
   killProc();

@@ -29,8 +29,9 @@ Environment & Modes
 - Per‑project `.env` (takes precedence over shell):
   - Use `.env.template` as a starting point: copy to `.env` and edit values.
   - Add a `.env` file at repo root with BM_-prefixed vars (only keys starting with `BM_` are read).
-  - Values from `.env` override existing shell environment variables for this process.
-  - Loaded automatically on startup and by libs that read env.
+- Values from `.env` override existing shell environment variables for this process.
+- Loaded automatically on startup and by libs that read env.
+- Configure `BM_SUPER_ADMIN` with the email address that should receive super admin privileges when authenticating via magic link.
 - Set `BM_DEV=true` (in `.env` or shell) to enable development conveniences:
   - Session cookies are not marked `secure`.
   - Migrations run automatically at startup unless `BM_MIGRATE` is set.
