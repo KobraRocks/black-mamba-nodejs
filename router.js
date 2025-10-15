@@ -103,25 +103,33 @@ export class Router {
   handle(request, response) {
     const pathname = request.url.pathname;
     const method = request.method;
+    const methodStore = this.#store.get(method);
 
     if (method === 'GET' && pathname === '/__up') {
       return response.status(200).text('ok');
     }
 
-    if (this.#handle_static(request, response)) return;
+    const tryHandleRoute = () => {
+      if (!methodStore || methodStore.size === 0) return false;
+      for (const [pattern, handler] of methodStore) {
+        if (!pattern.test(pathname)) continue;
+        const match = pattern.exec(pathname);
+        request.params = match.pathname.groups;
+        handler(request, response);
+        return true;
+      }
+      return false;
+    };
 
-    const methodStore = this.#store.get(method);
-    if (!methodStore || methodStore.size === 0) {
+    if (method === 'GET' && pathname === '/') {
+      if (tryHandleRoute()) return;
+      if (this.#handle_static(request, response)) return;
       return response.status(404).send('Not Found');
     }
 
-    for (const [pattern, handler] of methodStore) {
-      if (pattern.test(pathname)) {
-        const match = pattern.exec(pathname);
-        request.params = match.pathname.groups;
-        return handler(request, response);
-      }
-    }
+    if (this.#handle_static(request, response)) return;
+
+    if (tryHandleRoute()) return;
 
     return response.status(404).send('Not Found');
   }
