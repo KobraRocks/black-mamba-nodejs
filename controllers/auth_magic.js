@@ -28,9 +28,12 @@ function hostToDomain(host = '') {
   return withoutPort || 'black-mamba.local';
 }
 
-function buildMagicLinkEmail({ email, url, host, superAdmin }) {
+function buildMagicLinkEmail({ email, url, host, superAdmin, from }) {
   const domain = hostToDomain(host);
-  const from = `Black Mamba <no-reply@${domain}>`;
+  const defaultFrom = process.env.BM_EMAIL_SENDER && String(process.env.BM_EMAIL_SENDER).trim()
+    ? String(process.env.BM_EMAIL_SENDER).trim()
+    : `Black Mamba <no-reply@${domain}>`;
+  from = String(from || '').trim() || defaultFrom;
   const subject = 'Your Black Mamba sign-in link';
   const textLines = [
     'Hello,',
