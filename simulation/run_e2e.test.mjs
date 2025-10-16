@@ -243,6 +243,14 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
 
     assert.equal(Boolean(r4.json.super_admin), false);
 
+    const featureList = Array.isArray(r4.json.features) ? r4.json.features : [];
+    const bookingFeature = featureList.find((f) => f.key === 'booking');
+    assert.ok(bookingFeature, 'booking feature present for guest');
+    assert.equal(bookingFeature.role, 'guest');
+    const bookingLinks = Array.isArray(bookingFeature.links) ? bookingFeature.links : [];
+    assert.ok(bookingLinks.some((link) => link.url === '/event_bookings/management'));
+    assert.equal(bookingLinks.some((link) => link.url === '/events/management'), false);
+
   });
 
   // 5) WebAuthn registration
@@ -353,6 +361,9 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     assert.equal(r7.status, 200);
     assert.equal(r7.json.email, email);
     assert.equal(Boolean(r7.json.super_admin), false);
+    const features = Array.isArray(r7.json.features) ? r7.json.features : [];
+    const bookingFeature = features.find((f) => f.key === 'booking');
+    assert.ok(bookingFeature, 'booking feature present after login');
   });
 
   // 8) Verify logged-in JSON endpoint still works
@@ -404,6 +415,13 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   await withStep('assert /me reports booker status', async () => {
     assert.equal(profileStatus.status, 200);
     assert.equal(profileStatus.json.status, 'booker');
+    const features = Array.isArray(profileStatus.json.features) ? profileStatus.json.features : [];
+    const bookingFeature = features.find((f) => f.key === 'booking');
+    assert.ok(bookingFeature, 'booking feature present for booker');
+    assert.equal(bookingFeature.role, 'booker');
+    const bookingUrls = Array.isArray(bookingFeature.links) ? bookingFeature.links.map((link) => link.url) : [];
+    assert.ok(bookingUrls.includes('/events/management'));
+    assert.ok(bookingUrls.includes('/booking/management'));
   });
 
   const managementShell = await withStep('GET booking management shell', async () => {
@@ -597,6 +615,10 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     assert.equal(superMe.status, 200);
     assert.equal(superMe.json.email, superEmail);
     assert.equal(superMe.json.super_admin, true);
+    const features = Array.isArray(superMe.json.features) ? superMe.json.features : [];
+    const bookingFeature = features.find((f) => f.key === 'booking');
+    assert.ok(bookingFeature, 'super admin sees booking feature');
+    assert.equal(bookingFeature.role, 'admin');
   });
 
   const dashHtml = await withStep('GET super admin dashboard HTML', () => httpText(`${base}/super_admin`, { cookie: superSid }));

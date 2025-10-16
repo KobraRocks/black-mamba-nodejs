@@ -1,4 +1,14 @@
 import { ApplicationController } from './application.js';
+import { featureDefinitions, featuresForUser } from '../libs/features/index.js';
+
+function lookupModel(controller, key) {
+  if (!key) return undefined;
+  const normalized = String(key);
+  const pascal = normalized.replace(/(^|_)(\w)/g, (_, __, chr) => chr.toUpperCase());
+  if (controller[pascal]) return controller[pascal];
+  if (typeof controller.model === 'function') return controller.model(normalized);
+  return undefined;
+}
 
 export const Me = new class extends ApplicationController {
   resources = 'me';
@@ -26,19 +36,28 @@ export const Me = new class extends ApplicationController {
     })();
 
     const superAdmin = !!req.session?.get?.('super_admin');
-    if (superAdmin) {
-      const payload = { id: Number(user.id), email: user.email, super_admin: superAdmin };
-      if (sessionStatus) payload.status = sessionStatus;
-      return payload;
-    }
+    const getModel = (key) => lookupModel(this, key);
+    const definitions = featureDefinitions({ getModel });
+    const features = featuresForUser({
+      userId: id,
+      sessionStatus,
+      getModel,
+      definitions,
+    });
 
-    const payload = {
+    const basePayload = {
       id,
       email: typeof email === 'string' ? email : String(email ?? ''),
       public_id: typeof publicId === 'string' ? publicId : String(publicId ?? ''),
     };
-    if (sessionStatus) payload.status = sessionStatus;
-    return payload;
+    if (sessionStatus) basePayload.status = sessionStatus;
+    if (features.length) basePayload.features = features;
+
+    if (superAdmin) {
+      return { ...basePayload, super_admin: true };
+    }
+
+    return basePayload;
 
   }
 
