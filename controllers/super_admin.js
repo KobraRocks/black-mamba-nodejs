@@ -1,22 +1,13 @@
 import { ApplicationController } from './application.js';
+import { featureDefinitions, labelForRole } from '../libs/features/index.js';
 
-function uniqueByKey(items = []) {
-  const seen = new Set();
-  const result = [];
-  for (const entry of items) {
-    if (!entry || typeof entry.key !== 'string') continue;
-    const key = entry.key;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    result.push(entry);
-  }
-  return result;
-}
-
-function labelForRole(feature, role) {
-  if (!feature || !Array.isArray(feature.roles)) return role;
-  const found = feature.roles.find(option => option.key === role);
-  return found ? found.label : role;
+function lookupModel(controller, key) {
+  if (!key) return undefined;
+  const normalized = String(key);
+  const pascal = normalized.replace(/(^|_)(\w)/g, (_, __, chr) => chr.toUpperCase());
+  if (controller[pascal]) return controller[pascal];
+  if (typeof controller.model === 'function') return controller.model(normalized);
+  return undefined;
 }
 
 export const SuperAdmin = new class extends ApplicationController {
@@ -119,63 +110,7 @@ export const SuperAdmin = new class extends ApplicationController {
   }
 
   featureDefinitions() {
-    const definitions = [];
-    const bookingFeature = this.bookingFeatureDefinition();
-    if (bookingFeature) definitions.push(bookingFeature);
-    return definitions;
-  }
-
-  bookingFeatureDefinition() {
-    const BookingUser = this.BookingUser ?? this.model('booking_user');
-    if (!BookingUser) return null;
-    const EventType = this.EventType ?? this.model('event_type');
-    const EventBooking = this.EventBooking ?? this.model('event_booking');
-    const statuses = BookingUser.statuses || {};
-    const guest = String(statuses.GUEST || 'guest');
-    const booker = String(statuses.BOOKER || 'booker');
-    const admin = String(statuses.ADMIN || 'admin');
-    const roles = uniqueByKey([
-      { key: guest, label: 'Guest' },
-      { key: booker, label: 'Organizer' },
-      { key: admin, label: 'Booking admin' },
-    ]);
-    const collectAssignments = () => {
-      const map = new Map();
-      const records = BookingUser.all({ order: 'user_id ASC' });
-      for (const record of records) {
-        const uid = Number(record.user_id);
-        if (!Number.isFinite(uid)) continue;
-        const role = String(record.status || '').trim().toLowerCase() || guest;
-        map.set(uid, role);
-      }
-      return map;
-    };
-    const applyRole = (userId, role) => {
-      const normalized = role || guest;
-      let profile = BookingUser.find_by?.({ user_id: userId });
-      if (!profile) {
-        profile = BookingUser.create({ user_id: userId, status: normalized });
-      } else {
-        profile.assign({ status: normalized });
-        profile.save();
-      }
-      return normalized;
-    };
-    const collectMetrics = () => {
-      const eventTypes = EventType?.count?.() ?? 0;
-      const totalBookings = EventBooking?.count?.() ?? 0;
-      return { eventTypes, totalBookings };
-    };
-    return {
-      key: 'booking',
-      name: 'Booking',
-      description: 'Manage scheduling, availability, and event bookings.',
-      defaultRole: guest,
-      roles,
-      collectAssignments,
-      applyRole,
-      collectMetrics,
-    };
+    return featureDefinitions({ getModel: (key) => lookupModel(this, key) });
   }
 
   collectFeatureAssignments(features) {
