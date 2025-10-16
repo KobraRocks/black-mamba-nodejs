@@ -85,7 +85,7 @@ This document summarizes the HTTP routes that Black Mamba exposes. Run `npm star
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /me | me#index | Returns the session user’s profile summary (id, email, public_id, status). Use for “who am I?” checks. |
+| GET | /me | me#index | Returns the session user’s profile summary (id, email, public_id, status). Use for “who am I?” checks. A list of features the userhas access |
 | GET | /me/new | me#new | Reserved for future account creation flow. Currently returns HTTP 405. |
 | POST | /me | me#create | Reserved for future account creation flow. Currently returns HTTP 405. |
 | GET | /me/:id | me#show | Placeholder for fetching other profiles. Currently returns HTTP 405. |
