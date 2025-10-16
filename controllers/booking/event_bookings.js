@@ -1,9 +1,11 @@
-import { ApplicationController } from './application.js';
-import { generateDailySlots } from '../libs/booking/index.js';
-import { hmacVerify, hmacSign } from '../libs/session/crypto.js';
+import { ApplicationController } from '../application.js';
+import { generateDailySlots } from '../../libs/booking/index.js';
+import { hmacVerify, hmacSign } from '../../libs/session/crypto.js';
 
 export const EventBookings = new class extends ApplicationController {
+  namespace = 'booking';
   resources = 'event_bookings';
+  routeRoot = '/event_bookings';
   constructor() {
     super();
     this.custom_routes.add(['GET', 'cancel', 'cancel']);

@@ -19,7 +19,7 @@ function formatDuration(minutes) {
 export default function eventsManagementList({ assigns }) {
   const events = Array.isArray(assigns?.events) ? assigns.events : [];
   if (events.length === 0) {
-    return `<div class="bm-empty">No event types yet. <a href="/events/new">Create one</a>.</div>`;
+    return `<div class="bm-empty">No event types yet. <a href="/booking/events/new">Create one</a>.</div>`;
   }
   const rows = events.map((event) => {
     const name = escapeHtml(event.name || 'Untitled');

@@ -3,7 +3,7 @@ export default function ({ assigns }) {
   const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   return `<!doctype html><html><head><meta charset="utf-8"><title>Edit ${esc(e.name)}</title></head><body>
   <h1>Edit Event Type</h1>
-  <form method="post" action="/events/${e.id}/edit">
+  <form method="post" action="/booking/events/${e.id}/edit">
     <label>Name <input name="name" value="${esc(e.name)}" required></label><br>
     <label>Slug <input name="slug" value="${esc(e.slug)}" required></label><br>
     <label>Duration (min) <input name="duration_min" type="number" value="${e.duration_min ?? 30}" min="5"></label><br>

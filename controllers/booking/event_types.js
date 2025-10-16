@@ -1,9 +1,11 @@
-import { ApplicationController } from './application.js';
-import { generateDailySlots } from '../libs/booking/index.js';
-import { utcToLocal } from '../libs/timezone/index.js';
+import { ApplicationController } from '../application.js';
+import { generateDailySlots } from '../../libs/booking/index.js';
+import { utcToLocal } from '../../libs/timezone/index.js';
 
 export const Events = new class extends ApplicationController {
+  namespace = 'booking';
   resources = 'events';
+  routeRoot = '/events';
 
   constructor() {
     super();
@@ -178,7 +180,7 @@ export const Events = new class extends ApplicationController {
   }
 
   // HTML views
-  new(_req, _res) { /* auto-render views/events/new.js */ }
+  new(_req, _res) { /* auto-render views/booking/events/new.js */ }
   edit(req, _res) {
     const id = Number(req.params.id);
     const et = this.model('event_type').find(id);

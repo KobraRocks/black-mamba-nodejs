@@ -248,8 +248,8 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     assert.ok(bookingFeature, 'booking feature present for guest');
     assert.equal(bookingFeature.role, 'guest');
     const bookingLinks = Array.isArray(bookingFeature.links) ? bookingFeature.links : [];
-    assert.ok(bookingLinks.some((link) => link.url === '/event_bookings/management'));
-    assert.equal(bookingLinks.some((link) => link.url === '/events/management'), false);
+    assert.ok(bookingLinks.some((link) => link.url === '/booking/event_bookings/management'));
+    assert.equal(bookingLinks.some((link) => link.url === '/booking/events/management'), false);
 
   });
 
@@ -384,7 +384,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     return obj;
   })();
 
-  const createEventRes = await withStep('POST create event type', () => httpJson(`${base}/events`, {
+  const createEventRes = await withStep('POST create event type', () => httpJson(`${base}/booking/events`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     cookie: sid,
@@ -420,7 +420,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
     assert.ok(bookingFeature, 'booking feature present for booker');
     assert.equal(bookingFeature.role, 'booker');
     const bookingUrls = Array.isArray(bookingFeature.links) ? bookingFeature.links.map((link) => link.url) : [];
-    assert.ok(bookingUrls.includes('/events/management'));
+    assert.ok(bookingUrls.includes('/booking/events/management'));
     assert.ok(bookingUrls.includes('/booking/management'));
   });
 
@@ -435,7 +435,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   });
 
   const managementEvents = await withStep('GET management events fragment', async () => {
-    const res = await httpText(`${base}/events/management`, { cookie: sid });
+    const res = await httpText(`${base}/booking/events/management`, { cookie: sid });
     assert.equal(res.status, 200);
     return res.text;
   });
@@ -445,7 +445,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   });
 
   const managementBookings = await withStep('GET management bookings fragment', async () => {
-    const res = await httpText(`${base}/event_bookings/management`, { cookie: sid });
+    const res = await httpText(`${base}/booking/event_bookings/management`, { cookie: sid });
     assert.equal(res.status, 200);
     return res.text;
   });
@@ -454,7 +454,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   });
 
   // 10) Query available slots for tomorrow
-  const slotsRes = await withStep('GET slots for event type', () => httpJson(`${base}/events/${eventType.id}/slots?date=${encodeURIComponent(tomorrow)}&tz_offset=${encodeURIComponent(eventType.tz_offset || '+00:00')}`));
+  const slotsRes = await withStep('GET slots for event type', () => httpJson(`${base}/booking/events/${eventType.id}/slots?date=${encodeURIComponent(tomorrow)}&tz_offset=${encodeURIComponent(eventType.tz_offset || '+00:00')}`));
   const { slots, firstSlot } = await withStep('assert slots returned', async () => {
     assert.equal(slotsRes.status, 200);
     const s = Array.isArray(slotsRes.json?.slots) ? slotsRes.json.slots : [];
@@ -541,7 +541,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   let bookingId;
   let cancelToken;
   // 12) Ensure the organizer can list the booking
-  const listRes = await withStep('GET organizer bookings list', () => httpJson(`${base}/event_bookings`, { cookie: sid }));
+  const listRes = await withStep('GET organizer bookings list', () => httpJson(`${base}/booking/event_bookings`, { cookie: sid }));
   await withStep('assert booking appears in list', async () => {
     assert.equal(listRes.status, 200);
     const listed = Array.isArray(listRes.json) ? listRes.json : [];
@@ -553,7 +553,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   cancelToken = `${bookingId}.${hmacSign(String(bookingId), cancelSecret)}`;
 
   // 13) Prevent double-booking the same slot
-  const doubleRes = await withStep('POST double-book same slot', () => httpJson(`${base}/event_bookings`, {
+  const doubleRes = await withStep('POST double-book same slot', () => httpJson(`${base}/booking/event_bookings`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ event_type_id: eventType.id, invitee_name: 'Bob', invitee_email: 'bob@example.com', start_iso: firstSlot })
   }));
@@ -563,7 +563,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   });
 
   // 14) Cancel booking via token URL (HTML page)
-  const cancelHtml = await withStep('GET cancel booking page', async () => fetch(`${base}/event_bookings/cancel?token=${encodeURIComponent(cancelToken)}`));
+  const cancelHtml = await withStep('GET cancel booking page', async () => fetch(`${base}/booking/event_bookings/cancel?token=${encodeURIComponent(cancelToken)}`));
   const cancelText = await withStep('read cancel booking HTML', async () => cancelHtml.text());
   await withStep('assert cancel booking ok', async () => {
     assert.equal(cancelHtml.status, 200);
@@ -571,7 +571,7 @@ test('E2E: static, views, magic link, WebAuthn, and booking flow', async (t) => 
   });
 
   // 15) Verify booking marked canceled in owner list
-  const listRes2 = await withStep('GET bookings list after cancel', () => httpJson(`${base}/event_bookings`, { cookie: sid }));
+  const listRes2 = await withStep('GET bookings list after cancel', () => httpJson(`${base}/booking/event_bookings`, { cookie: sid }));
   await withStep('assert booking is canceled', async () => {
     assert.equal(listRes2.status, 200);
     const b2 = (Array.isArray(listRes2.json) ? listRes2.json : []).find(b => b.id === bookingId);

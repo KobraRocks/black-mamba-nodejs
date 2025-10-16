@@ -17,13 +17,28 @@ class SamplesController extends ApplicationController {
   }
 }
 
-const controller = new SamplesController();
+class AdminReportsController extends ApplicationController {
+  namespace = 'admin';
+  resources = 'reports';
+  routeRoot = 'reports';
+  custom_routes = new Set([
+    ['GET', 'stats', 'stats']
+  ]);
+
+  stats() {
+    return { ok: true };
+  }
+}
+
+const samples = new SamplesController();
+const reports = new AdminReportsController();
 
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bm-router-'));
 const catalogPath = path.join(tmpRoot, 'route.catalog');
 
 const router = new Router({ catalogPath });
-router.register(controller);
+router.register(samples);
+router.register(reports);
 
 const entries = fs.readFileSync(catalogPath, 'utf8')
   .split('\n')
@@ -33,9 +48,12 @@ const entries = fs.readFileSync(catalogPath, 'utf8')
 assert.ok(entries.includes('GET /samples -> SamplesController#index'));
 assert.ok(entries.includes('POST /samples -> SamplesController#create'));
 assert.ok(entries.includes('GET /samples/featured -> SamplesController#featured'));
+assert.ok(entries.includes('GET /admin/reports -> AdminReportsController#index'));
+assert.ok(entries.includes('GET /admin/reports/stats -> AdminReportsController#stats'));
 
 const routerAgain = new Router({ catalogPath });
-routerAgain.register(controller);
+routerAgain.register(samples);
+routerAgain.register(reports);
 
 const entriesAfterReset = fs.readFileSync(catalogPath, 'utf8')
   .split('\n')

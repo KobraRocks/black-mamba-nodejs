@@ -1,5 +1,5 @@
-import { ApplicationRecord } from './application.js';
-import { normalizeDate } from '../libs/booking/index.js';
+import { ApplicationRecord } from '../application.js';
+import { normalizeDate } from '../../libs/booking/index.js';
 
 export class EventBooking extends ApplicationRecord {
   validate() {
