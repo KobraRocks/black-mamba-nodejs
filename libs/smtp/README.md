@@ -7,11 +7,12 @@ Environment
 - `BM_SMTP_PORT` (number) — server port (e.g., 465 for SMTPS)
 - `BM_SMTP_USERNAME` or `BM_SMTP_USER` (string, optional) — username
 - `BM_SMTP_PASSWORD` or `BM_SMTP_PASS` (string, optional) — password
+- `BM_EMAIL_SENDER` (string, optional) — default `from` address when message omits one
 
 Exports
 - `sendMail(message, overrides?) => Promise<{ result: true } | { error: Error }>`
 - `buildMessage(message, hostForMessageId?) => { headers: string[], body: string, content: string }`
-- `loadEnvConfig(overrides?) => { host: string, port: number, username: string, password: string }`
+- `loadEnvConfig(overrides?) => { host: string, port: number, username: string, password: string, sender: string }`
 - `MailerError` — custom error class (with helper predicates)
 - `dotStuff(contentWithTerminator) => string` — applies SMTP dot‑stuffing to DATA lines (leaves final `.` terminator intact)
 
@@ -19,7 +20,7 @@ Quick Start (sendMail)
 ```js
 import { sendMail } from './libs/smtp/index.js';
 
-// Ensure env: BM_SMTP_HOST, BM_SMTP_PORT, BM_SMTP_USERNAME, BM_SMTP_PASSWORD (if auth needed)
+// Ensure env: BM_SMTP_HOST, BM_SMTP_PORT, BM_EMAIL_SENDER, BM_SMTP_USERNAME, BM_SMTP_PASSWORD (if auth needed)
 const res = await sendMail({
   from: 'no-reply@example.com',
   to: 'user@example.com',
@@ -37,12 +38,12 @@ if (res.result) {
 
 sendMail(message, overrides?)
 - Input message fields:
-  - `from` string Email (e.g., `no-reply@example.com`).
+  - `from` string Email (e.g., `no-reply@example.com`). When omitted, falls back to `BM_EMAIL_SENDER`.
   - `to` string Email or address list (single address supported in current implementation).
   - `subject?` string
   - `text?` string Plain text body.
   - `html?` string HTML body.
-- Overrides (optional, for tests/local overrides): `{ host, port, username, password }` — takes precedence over env.
+- Overrides (optional, for tests/local overrides): `{ host, port, username, password, sender }` — takes precedence over env.
 - Behavior:
   - Connects via implicit TLS (`tls.connect`) to `SMTP_HOST:SMTP_PORT`.
   - Issues `EHLO` and authenticates with `AUTH PLAIN` if credentials are present.
@@ -110,10 +111,10 @@ import { loadEnvConfig } from './libs/smtp/index.js';
 process.env.BM_SMTP_HOST = 'smtp.example.com';
 process.env.BM_SMTP_PORT = '465';
 const cfg = loadEnvConfig();
-// { host: 'smtp.example.com', port: 465, username: '', password: '' }
+// { host: 'smtp.example.com', port: 465, username: '', password: '', sender: '' }
 
-const cfg2 = loadEnvConfig({ port: 2465 });
-// { host: 'smtp.example.com', port: 2465, ... }
+const cfg2 = loadEnvConfig({ port: 2465, sender: 'no-reply@example.com' });
+// { host: 'smtp.example.com', port: 2465, sender: 'no-reply@example.com', ... }
 ```
 
 MailerError

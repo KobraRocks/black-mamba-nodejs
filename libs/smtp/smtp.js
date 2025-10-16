@@ -81,9 +81,16 @@ function loadEnvConfig(overrides = {}) {
   const port = portRaw ? Number(portRaw) : 465;
   const username = overrides.username || env.BM_SMTP_USERNAME || env.BM_SMTP_USER || "";
   const password = overrides.password || env.BM_SMTP_PASSWORD || env.BM_SMTP_PASS || "";
+  const sender = overrides.sender || env.BM_EMAIL_SENDER || "";
   if (!host) throw new MailerError("Missing BM_SMTP_HOST in environment");
   if (!port || Number.isNaN(port)) throw new MailerError("Missing or invalid BM_SMTP_PORT in environment");
-  return { host: String(host).trim(), port, username, password };
+  return {
+    host: String(host).trim(),
+    port,
+    username,
+    password,
+    sender: sender ? String(sender).trim() : "",
+  };
 }
 
 async function createConnection(host = "", port = 0) {
@@ -275,6 +282,13 @@ export async function sendMail(
   overrides = {},
 ) {
   const config = loadEnvConfig(overrides);
+  const mail = {
+    ...message,
+    from: message.from || config.sender || "",
+  };
+  if (!mail.from) {
+    throw new MailerError("Missing sender email: provide message.from or set BM_EMAIL_SENDER");
+  }
   const conn = await createConnection(config.host, config.port);
 
   return new Promise((resolve) => {
@@ -296,16 +310,16 @@ export async function sendMail(
           await authenticate(conn, config.username, config.password);
         }
 
-        response = await sendCommand(conn, `MAIL FROM:<${message.from}>`);
+        response = await sendCommand(conn, `MAIL FROM:<${mail.from}>`);
         validateResponse(response, "250", "MAIL FROM command failed");
 
-        response = await sendCommand(conn, `RCPT TO:<${message.to}>`);
+        response = await sendCommand(conn, `RCPT TO:<${mail.to}>`);
         validateResponse(response, "250", "RCPT TO command failed");
 
         response = await sendCommand(conn, `DATA`);
         validateResponse(response, "354", "DATA command failed");
 
-        const { content } = buildMessage(message, config.host);
+        const { content } = buildMessage(mail, config.host);
         const stuffed = dotStuff(content);
 
         // const content = [
