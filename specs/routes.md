@@ -6,163 +6,163 @@ This document summarizes the HTTP routes that Black Mamba exposes. Run `npm star
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /pages/index/view | pages#index | Stable alias that renders the landing view when you need to link to the default page without conflicting with `/pages/:id`. |
-| GET | /pages | pages#index | Renders the generic pages index; use for navigation to the main marketing page. |
-| GET | /pages/new | pages#new | Reserved for a future page-creation form. Currently returns HTTP 405. |
-| POST | /pages | pages#create | Reserved for future CMS-style page creation. Currently returns HTTP 405. |
-| GET | /pages/:id | pages#show | Displays an ad-hoc page by ID; handy for smoke tests or demo content that needs an identifier. |
-| GET | /pages/:id/edit | pages#edit | Placeholder for editing static pages. Currently returns HTTP 405. |
-| PUT | /pages/:id | pages#update | Placeholder for updating static pages. Currently returns HTTP 405. |
-| PATCH | /pages/:id | pages#update | Placeholder for updating static pages via partial updates. Currently returns HTTP 405. |
-| DELETE | /pages/:id | pages#destroy | Placeholder for deleting static pages. Currently returns HTTP 405. |
+| GET | /pages/index/view | pages#index | Stable alias that renders the landing view without conflicting with `/pages/:id`; link here when you need a fixed marketing path. |
+| GET | /pages | pages#index | Autoloads `views/pages/index.js` which serves the main landing page content. |
+| GET | /pages/new | pages#new | Placeholder route for a future page-creation form. Currently responds with HTTP 405. |
+| POST | /pages | pages#create | Placeholder for CMS-style page creation. Currently responds with HTTP 405. |
+| GET | /pages/:id | pages#show | Renders assigns for ad-hoc pages; useful for demos that need an ID parameter. |
+| GET | /pages/:id/edit | pages#edit | Placeholder for editing static pages. Currently responds with HTTP 405. |
+| PUT | /pages/:id | pages#update | Placeholder for updating static pages. Currently responds with HTTP 405. |
+| PATCH | /pages/:id | pages#update | Placeholder for partial static page updates. Currently responds with HTTP 405. |
+| DELETE | /pages/:id | pages#destroy | Placeholder for deleting static pages. Currently responds with HTTP 405. |
 
 ## Magic Links Authentication (`/auth/magic`)
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| POST | /auth/magic/request | magic#request_link | Generates and emails (or logs in dev mode) a magic sign-in link; call after collecting the user email. |
-| GET | /auth/magic/callback | magic#callback | Consumes a magic link token, signs the user in, and redirects/returns JSON. Use as the magic link destination. |
-| GET | /auth/magic | magic#index | Serves the magic link request page; link users here if they need to request a login link. |
-| GET | /auth/magic/new | magic#new | Provides assigns for the request view; typically reached via `/auth/magic`. |
-| POST | /auth/magic | magic#create | Reserved for REST-style creation. Currently returns HTTP 405; use `/auth/magic/request` instead. |
-| GET | /auth/magic/:id | magic#show | Placeholder for inspecting a stored magic link request. Currently returns HTTP 405. |
-| GET | /auth/magic/:id/edit | magic#edit | Placeholder for editing a stored magic link configuration. Currently returns HTTP 405. |
-| PUT | /auth/magic/:id | magic#update | Placeholder for updating a stored magic link configuration. Currently returns HTTP 405. |
-| PATCH | /auth/magic/:id | magic#update | Placeholder for updating a stored magic link configuration. Currently returns HTTP 405. |
-| DELETE | /auth/magic/:id | magic#destroy | Placeholder for deleting a stored magic link configuration. Currently returns HTTP 405. |
+| POST | /auth/magic/request | magic#request_link | Generates and (when SMTP is configured) sends a magic sign-in link. Returns `{ ok: true }` or `{ ok: true, url, token }` in dev without SMTP so you can surface the raw link. |
+| GET | /auth/magic/callback | magic#callback | Consumes a magic link token, signs the user in, upgrades their booking role when needed, and returns JSON or redirects depending on the client. |
+| GET | /auth/magic | magic#index | Serves the request form with dev previews when email delivery is disabled. |
+| GET | /auth/magic/new | magic#new | Supplies assigns for the request view; typically rendered by `/auth/magic`. |
+| POST | /auth/magic | magic#create | Placeholder for REST-style creation. Currently responds with HTTP 405. |
+| GET | /auth/magic/:id | magic#show | Placeholder for inspecting stored requests. Currently responds with HTTP 405. |
+| GET | /auth/magic/:id/edit | magic#edit | Placeholder for editing stored requests. Currently responds with HTTP 405. |
+| PUT | /auth/magic/:id | magic#update | Placeholder for updating stored requests. Currently responds with HTTP 405. |
+| PATCH | /auth/magic/:id | magic#update | Placeholder for updating stored requests. Currently responds with HTTP 405. |
+| DELETE | /auth/magic/:id | magic#destroy | Placeholder for deleting stored requests. Currently responds with HTTP 405. |
 
 ## Booking Pages (`/booking`) — `controllers/booking/pages.js`
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /booking/:booker_public_id/:slug | booking#page | Public scheduling page for an event type; link invitees here to pick a slot. |
-| GET | /booking/:booker_public_id/:slug/contact | booking#contact | Displays the confirmation form once an invitee selects a slot; use for multi-step booking flows. |
-| POST | /booking/:booker_public_id/:slug/contact | booking#submit | Creates a booking, sends notifications, and renders confirmation; post the invitee’s details and selected slot here. |
-| GET | /booking/management | booking#management | Organizer dashboard that surfaces event types and booking links; requires a booker session. |
-| GET | /booking | booking#index | Reserved for listing booking pages. Currently returns HTTP 405. |
-| GET | /booking/new | booking#new | Reserved for future booking page creation. Currently returns HTTP 405. |
-| POST | /booking | booking#create | Reserved for future booking page creation. Currently returns HTTP 405. |
-| GET | /booking/:id | booking#show | Placeholder for retrieving booking page metadata by ID. Currently returns HTTP 405. |
-| GET | /booking/:id/edit | booking#edit | Placeholder for editing booking pages. Currently returns HTTP 405. |
-| PUT | /booking/:id | booking#update | Placeholder for updating booking pages. Currently returns HTTP 405. |
-| PATCH | /booking/:id | booking#update | Placeholder for partially updating booking pages. Currently returns HTTP 405. |
-| DELETE | /booking/:id | booking#destroy | Placeholder for deleting booking pages. Currently returns HTTP 405. |
+| GET | /booking/:booker_public_id/:slug | booking#page | Public scheduling page for an event type. Accepts optional `month`, `day`, and `year` query parameters to pre-load specific calendars. |
+| GET | /booking/:booker_public_id/:slug/contact | booking#contact | Renders the confirmation form once an invitee picks a slot. Expects `start`/`start_iso` query parameters generated by the calendar UI. |
+| POST | /booking/:booker_public_id/:slug/contact | booking#submit | Validates slot availability, creates the booking record, emails notifications when SMTP is configured, and renders confirmation assigns (JSON when requested). Requires `first_name`, `email`, and `start_iso`. |
+| GET | /booking/management | booking#management | Organizer dashboard that links to event and booking management views. Requires an authenticated booker session. |
+| GET | /booking | booking#index | Placeholder for listing booking pages. Currently responds with HTTP 405. |
+| GET | /booking/new | booking#new | Placeholder for booking page creation. Currently responds with HTTP 405. |
+| POST | /booking | booking#create | Placeholder for booking page creation. Currently responds with HTTP 405. |
+| GET | /booking/:id | booking#show | Placeholder for retrieving booking metadata. Currently responds with HTTP 405. |
+| GET | /booking/:id/edit | booking#edit | Placeholder for editing booking pages. Currently responds with HTTP 405. |
+| PUT | /booking/:id | booking#update | Placeholder for updating booking pages. Currently responds with HTTP 405. |
+| PATCH | /booking/:id | booking#update | Placeholder for partially updating booking pages. Currently responds with HTTP 405. |
+| DELETE | /booking/:id | booking#destroy | Placeholder for deleting booking pages. Currently responds with HTTP 405. |
 
 ## Event Bookings (`/booking/event_bookings`) — `controllers/booking/event_bookings.js`
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /booking/event_bookings/cancel | event_bookings#cancel | Self-service cancellation endpoint for invitees holding a signed cancel token. Link from emails. |
-| GET | /booking/event_bookings/management | event_bookings#management | Organizer view showing upcoming bookings tied to their event types. Requires booker access. |
-| GET | /booking/event_bookings | event_bookings#index | Lists bookings for the signed-in organizer; supports `event_type_id` filtering. Use for management UIs. |
-| GET | /booking/event_bookings/new | event_bookings#new | Reserved for a booking creation form. Currently returns HTTP 405. |
-| POST | /booking/event_bookings | event_bookings#create | API for creating bookings programmatically (used by booking flow). Expects event type and invitee details. |
-| GET | /booking/event_bookings/:id | event_bookings#show | Placeholder for retrieving a single booking. Currently returns HTTP 405. |
-| GET | /booking/event_bookings/:id/edit | event_bookings#edit | Placeholder for editing bookings via HTML. Currently returns HTTP 405. |
-| PUT | /booking/event_bookings/:id | event_bookings#update | Organizer API for rescheduling or updating booking status; requires ownership. |
-| PATCH | /booking/event_bookings/:id | event_bookings#update | Same as PUT but for partial updates. |
-| DELETE | /booking/event_bookings/:id | event_bookings#destroy | Organizer API for cancelling bookings outright. |
+| GET | /booking/event_bookings/cancel | event_bookings#cancel | Invitee self-service cancellation endpoint. Pass a `token` query parameter from confirmation emails to mark the booking as canceled and render a confirmation page. |
+| GET | /booking/event_bookings/management | event_bookings#management | Booker-facing HTML view showing upcoming bookings alongside event metadata. Requires booker access. |
+| GET | /booking/event_bookings | event_bookings#index | JSON list of bookings owned by the signed-in organizer. Supports `event_type_id` filtering. Requires authentication. |
+| GET | /booking/event_bookings/new | event_bookings#new | Placeholder for an HTML booking creation form. Currently responds with HTTP 405. |
+| POST | /booking/event_bookings | event_bookings#create | Core booking API used by the public flow. Requires `event_type_id`, `invitee_name`, `invitee_email`, and `start_iso`. Returns JSON with a `cancel_token` (or renders a success view). |
+| GET | /booking/event_bookings/:id | event_bookings#show | Placeholder for retrieving a single booking. Currently responds with HTTP 405. |
+| GET | /booking/event_bookings/:id/edit | event_bookings#edit | Placeholder for editing bookings via HTML. Currently responds with HTTP 405. |
+| PUT | /booking/event_bookings/:id | event_bookings#update | Organizer API for rescheduling or updating booking status. Accepts `start_iso` and/or `status`. Requires ownership. |
+| PATCH | /booking/event_bookings/:id | event_bookings#update | Partial update variant of the organizer API. |
+| DELETE | /booking/event_bookings/:id | event_bookings#destroy | Cancels a booking on behalf of the organizer. Returns HTTP 204 when successful. |
 
 ## Event Types (`/booking/events`) — `controllers/booking/event_types.js`
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /booking/events/:id/slots | events#slots | Returns available UTC slots for a specific event type ID; use for organizer tools. |
-| GET | /booking/events/s/:slug | events#show_slug | Fetches event type details by public slug; helpful when linking from booking pages. |
-| GET | /booking/events/s/:slug/slots | events#slots_slug | Slot lookup by slug, mirroring `/booking/events/:id/slots` for public contexts. |
-| POST | /booking/events/:id/edit | events#update | HTML-friendly update endpoint that accepts form submissions from the edit view. |
-| GET | /booking/events/management | events#management | Organizer management view listing their event types. Requires booker permissions. |
-| GET | /booking/events | events#index | Lists event types; pass `?mine=1` to limit to the signed-in organizer. |
-| GET | /booking/events/new | events#new | Renders the new event type form for organizers. |
-| POST | /booking/events | events#create | Creates a new event type for the signed-in organizer and upgrades their role if needed. |
-| GET | /booking/events/:id | events#show | Returns JSON for an event type by numeric ID. |
-| GET | /booking/events/:id/edit | events#edit | Provides assigns for the edit view of an event type. |
-| PUT | /booking/events/:id | events#update | API for updating an existing event type (JSON payload expected). |
+| GET | /booking/events/:id/slots | events#slots | Returns available UTC slots for a given event type. Requires a `date` (`YYYY-MM-DD`) query parameter plus optional `tz_offset` or `timeZone` for local mapping. |
+| GET | /booking/events/s/:slug | events#show_slug | Fetches event type details by public slug, returning 404 when the slug is unknown. |
+| GET | /booking/events/s/:slug/slots | events#slots_slug | Slot lookup by slug; mirrors `/booking/events/:id/slots` and supports the same query parameters. |
+| POST | /booking/events/:id/edit | events#update | HTML-friendly update endpoint used by the edit view form submission. Requires booker ownership. |
+| GET | /booking/events/management | events#management | Booker-facing HTML list of their event types. Requires booker access. |
+| GET | /booking/events | events#index | Lists event types as JSON. Pass `?mine=1` while signed in to scope results to the current organizer. |
+| GET | /booking/events/new | events#new | Renders the new event type form for organizers. Requires booker access. |
+| POST | /booking/events | events#create | Creates a new event type for the signed-in organizer, promoting them to booker when necessary, and returns 201 JSON. |
+| GET | /booking/events/:id | events#show | Returns JSON for an event type by numeric ID or 404 if it does not exist. |
+| GET | /booking/events/:id/edit | events#edit | Provides assigns for the edit form. Returns 404 when the event type is missing. |
+| PUT | /booking/events/:id | events#update | Updates an event type with JSON payloads. Requires ownership. |
 | PATCH | /booking/events/:id | events#update | Partial update variant for event types. |
-| DELETE | /booking/events/:id | events#destroy | Deletes an event type owned by the signed-in organizer. |
+| DELETE | /booking/events/:id | events#destroy | Deletes an event type owned by the signed-in organizer. Returns HTTP 204. |
 
 ## Current User (`/me`)
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /me | me#index | Returns the session user’s profile summary (id, email, public_id, status). Use for “who am I?” checks. A list of features the userhas access |
-| GET | /me/new | me#new | Reserved for future account creation flow. Currently returns HTTP 405. |
-| POST | /me | me#create | Reserved for future account creation flow. Currently returns HTTP 405. |
-| GET | /me/:id | me#show | Placeholder for fetching other profiles. Currently returns HTTP 405. |
-| GET | /me/:id/edit | me#edit | Placeholder for profile editing UI. Currently returns HTTP 405. |
-| PUT | /me/:id | me#update | Placeholder for updating profile data. Currently returns HTTP 405. |
-| PATCH | /me/:id | me#update | Placeholder for partially updating profile data. Currently returns HTTP 405. |
-| DELETE | /me/:id | me#destroy | Placeholder for deleting a profile. Currently returns HTTP 405. |
+| GET | /me | me#index | Returns the signed-in user’s profile, including `public_id`, session `status`, enabled feature flags, and `super_admin` flag when applicable. Responds with 401 when no session exists. |
+| GET | /me/new | me#new | Placeholder for future account creation flow. Currently responds with HTTP 405. |
+| POST | /me | me#create | Placeholder for future account creation flow. Currently responds with HTTP 405. |
+| GET | /me/:id | me#show | Placeholder for fetching other profiles. Currently responds with HTTP 405. |
+| GET | /me/:id/edit | me#edit | Placeholder for editing profiles. Currently responds with HTTP 405. |
+| PUT | /me/:id | me#update | Placeholder for updating profile data. Currently responds with HTTP 405. |
+| PATCH | /me/:id | me#update | Placeholder for partially updating profile data. Currently responds with HTTP 405. |
+| DELETE | /me/:id | me#destroy | Placeholder for deleting a profile. Currently responds with HTTP 405. |
 
 ## Sign-in (`/signin`)
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /signin | signin#index | Presents the combined magic link/passkey sign-in screen and stores `next` redirect hints. |
-| GET | /signin/new | signin#new | Reserved for REST-style sign-in creation. Currently returns HTTP 405. |
-| POST | /signin | signin#create | Reserved for REST-style sign-in submission. Currently returns HTTP 405. |
-| GET | /signin/:id | signin#show | Placeholder for session inspection. Currently returns HTTP 405. |
-| GET | /signin/:id/edit | signin#edit | Placeholder for editing sessions. Currently returns HTTP 405. |
-| PUT | /signin/:id | signin#update | Placeholder for updating sessions. Currently returns HTTP 405. |
-| PATCH | /signin/:id | signin#update | Placeholder for updating sessions. Currently returns HTTP 405. |
-| DELETE | /signin/:id | signin#destroy | Placeholder for deleting sessions. Currently returns HTTP 405. |
+| GET | /signin | signin#index | Presents the combined magic-link/passkey sign-in screen, caches a `next` redirect hint in the session, and redirects immediately if the user is already signed in. |
+| GET | /signin/new | signin#new | Placeholder for REST-style sign-in creation. Currently responds with HTTP 405. |
+| POST | /signin | signin#create | Placeholder for REST-style sign-in submission. Currently responds with HTTP 405. |
+| GET | /signin/:id | signin#show | Placeholder for session inspection. Currently responds with HTTP 405. |
+| GET | /signin/:id/edit | signin#edit | Placeholder for editing sessions. Currently responds with HTTP 405. |
+| PUT | /signin/:id | signin#update | Placeholder for updating sessions. Currently responds with HTTP 405. |
+| PATCH | /signin/:id | signin#update | Placeholder for updating sessions. Currently responds with HTTP 405. |
+| DELETE | /signin/:id | signin#destroy | Placeholder for deleting sessions. Currently responds with HTTP 405. |
 
 ## Super Admin (`/super_admin`)
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /super_admin/stats | super_admin#stats | Returns aggregate metrics for enabled features (e.g., booking counts); use for dashboards. |
-| GET | /super_admin/users | super_admin#users | Returns users plus their feature roles for administrative tooling. |
-| PATCH | /super_admin/users/:id/features/:feature | super_admin#update_role | Updates a user’s role for a specific feature; send JSON `{ role }`. |
-| POST | /super_admin/users/:id/features/:feature | super_admin#update_role | HTML form compatible variant of the role update endpoint. |
-| GET | /super_admin | super_admin#index | Renders the main super admin dashboard (JSON or HTML depending on Accept header). |
-| GET | /super_admin/new | super_admin#new | Reserved for creating super-admin records. Currently returns HTTP 405. |
-| POST | /super_admin | super_admin#create | Reserved for provisioning super-admin records. Currently returns HTTP 405. |
-| GET | /super_admin/:id | super_admin#show | Placeholder for inspecting a single super admin record. Currently returns HTTP 405. |
-| GET | /super_admin/:id/edit | super_admin#edit | Placeholder for editing super admin records. Currently returns HTTP 405. |
-| PUT | /super_admin/:id | super_admin#update | Placeholder for updating super admin records. Currently returns HTTP 405. |
-| PATCH | /super_admin/:id | super_admin#update | Placeholder for updating super admin records. Currently returns HTTP 405. |
-| DELETE | /super_admin/:id | super_admin#destroy | Placeholder for deleting super admin records. Currently returns HTTP 405. |
+| GET | /super_admin/stats | super_admin#stats | Returns aggregate metrics (`cards` and `breakdowns`) for every feature. Requires a super-admin session. |
+| GET | /super_admin/users | super_admin#users | Lists users with their feature roles for administrative tooling. Requires a super-admin session. |
+| PATCH | /super_admin/users/:id/features/:feature | super_admin#update_role | Updates a user’s role for a feature. Send JSON `{ "role": "booker" }`. Requires super-admin access. |
+| POST | /super_admin/users/:id/features/:feature | super_admin#update_role | HTML form–friendly variant of the role update endpoint. Requires super-admin access. |
+| GET | /super_admin | super_admin#index | Renders or returns the super admin dashboard payload. Requires super-admin access. |
+| GET | /super_admin/new | super_admin#new | Placeholder for provisioning super admin records. Currently responds with HTTP 405. |
+| POST | /super_admin | super_admin#create | Placeholder for provisioning super admin records. Currently responds with HTTP 405. |
+| GET | /super_admin/:id | super_admin#show | Placeholder for inspecting a single super admin record. Currently responds with HTTP 405. |
+| GET | /super_admin/:id/edit | super_admin#edit | Placeholder for editing super admin records. Currently responds with HTTP 405. |
+| PUT | /super_admin/:id | super_admin#update | Placeholder for updating super admin records. Currently responds with HTTP 405. |
+| PATCH | /super_admin/:id | super_admin#update | Placeholder for updating super admin records. Currently responds with HTTP 405. |
+| DELETE | /super_admin/:id | super_admin#destroy | Placeholder for deleting super admin records. Currently responds with HTTP 405. |
 
 ## Things (`/things`)
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /things | things#index | Simple test endpoint that returns "hello"; useful as a connectivity sanity check. |
-| GET | /things/new | things#new | Reserved for creating demo records. Currently returns HTTP 405. |
-| POST | /things | things#create | Reserved for creating demo records. Currently returns HTTP 405. |
-| GET | /things/:id | things#show | Returns a stub JSON object for manual testing and tutorial purposes. |
-| GET | /things/:id/edit | things#edit | Placeholder for editing demo records. Currently returns HTTP 405. |
-| PUT | /things/:id | things#update | Placeholder for updating demo records. Currently returns HTTP 405. |
-| PATCH | /things/:id | things#update | Placeholder for updating demo records. Currently returns HTTP 405. |
-| DELETE | /things/:id | things#destroy | Placeholder for deleting demo records. Currently returns HTTP 405. |
+| GET | /things | things#index | Health-check style endpoint that simply returns the string `"hello"`. Useful for verifying connectivity. |
+| GET | /things/new | things#new | Placeholder for creating demo records. Currently responds with HTTP 405. |
+| POST | /things | things#create | Placeholder for creating demo records. Currently responds with HTTP 405. |
+| GET | /things/:id | things#show | Returns a stub JSON object `{ id, name: "Ada" }` and validates the numeric ID. |
+| GET | /things/:id/edit | things#edit | Placeholder for editing demo records. Currently responds with HTTP 405. |
+| PUT | /things/:id | things#update | Placeholder for updating demo records. Currently responds with HTTP 405. |
+| PATCH | /things/:id | things#update | Placeholder for updating demo records. Currently responds with HTTP 405. |
+| DELETE | /things/:id | things#destroy | Placeholder for deleting demo records. Currently responds with HTTP 405. |
 
 ## Users (`/users`)
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /users | users#index | Lists all users ordered by ID; use in admin tooling. |
-| GET | /users/new | users#new | Reserved for user creation form rendering. Currently returns HTTP 405. |
-| POST | /users | users#create | Creates a user with the supplied email; responds with JSON and 201 on success. |
-| GET | /users/:id | users#show | Fetches a user by ID; returns 404 if not found. |
-| GET | /users/:id/edit | users#edit | Reserved for HTML editing view. Currently returns HTTP 405. |
-| PUT | /users/:id | users#update | Replaces mutable fields such as `email` for a user. |
+| GET | /users | users#index | Returns every user ordered by ID as JSON. |
+| GET | /users/new | users#new | Placeholder for user creation form rendering. Currently responds with HTTP 405. |
+| POST | /users | users#create | Creates a user with the supplied `email`, returning 201 JSON or 422 with validation errors. |
+| GET | /users/:id | users#show | Returns a user by ID or a 404 JSON error when missing. |
+| GET | /users/:id/edit | users#edit | Placeholder for HTML editing view. Currently responds with HTTP 405. |
+| PUT | /users/:id | users#update | Replaces mutable fields (currently `email`). Returns validation errors when saving fails. |
 | PATCH | /users/:id | users#update | Partial update variant for user records. |
-| DELETE | /users/:id | users#destroy | Deletes a user record; returns 204 on success. |
+| DELETE | /users/:id | users#destroy | Deletes a user and returns HTTP 204. |
 
 ## WebAuthn (`/auth/webauthn`)
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /auth/webauthn/register/options | webauthn#register_options | Generates WebAuthn registration options for the signed-in user; call before creating a credential. |
-| POST | /auth/webauthn/register/verify | webauthn#register_verify | Verifies a WebAuthn registration response and stores the credential. |
-| GET | /auth/webauthn/login/options | webauthn#login_options | Returns challenge and allowed credentials for a user to authenticate with passkeys. |
-| POST | /auth/webauthn/login/verify | webauthn#login_verify | Verifies a WebAuthn authentication response, signs the user in, and returns redirect info. |
-| GET | /auth/webauthn | webauthn#index | Reserved for listing credentials. Currently returns HTTP 405. |
-| GET | /auth/webauthn/new | webauthn#new | Reserved for future credential enrollment flow. Currently returns HTTP 405. |
-| POST | /auth/webauthn | webauthn#create | Reserved for REST-style credential creation. Currently returns HTTP 405. |
-| GET | /auth/webauthn/:id | webauthn#show | Placeholder for fetching a credential by ID. Currently returns HTTP 405. |
-| GET | /auth/webauthn/:id/edit | webauthn#edit | Placeholder for editing stored credentials. Currently returns HTTP 405. |
-| PUT | /auth/webauthn/:id | webauthn#update | Placeholder for updating stored credentials. Currently returns HTTP 405. |
-| PATCH | /auth/webauthn/:id | webauthn#update | Placeholder for updating stored credentials. Currently returns HTTP 405. |
-| DELETE | /auth/webauthn/:id | webauthn#destroy | Placeholder for deleting stored credentials. Currently returns HTTP 405. |
+| GET | /auth/webauthn/register/options | webauthn#register_options | Requires a signed-in user. Returns a WebAuthn registration challenge and stores it in the session for later verification. |
+| POST | /auth/webauthn/register/verify | webauthn#register_verify | Verifies a registration response, stores the credential, and logs helpful dev output when `BM_DEV` is true. |
+| GET | /auth/webauthn/login/options | webauthn#login_options | Returns a challenge and `allowCredentials` list for the given email or session user. Stores the challenge server-side. |
+| POST | /auth/webauthn/login/verify | webauthn#login_verify | Validates a WebAuthn assertion, updates the credential sign count, signs the user in, and returns `{ ok, user, redirect }`. |
+| GET | /auth/webauthn | webauthn#index | Placeholder for listing credentials. Currently responds with HTTP 405. |
+| GET | /auth/webauthn/new | webauthn#new | Placeholder for future credential enrollment. Currently responds with HTTP 405. |
+| POST | /auth/webauthn | webauthn#create | Placeholder for REST-style credential creation. Currently responds with HTTP 405. |
+| GET | /auth/webauthn/:id | webauthn#show | Placeholder for fetching a credential by ID. Currently responds with HTTP 405. |
+| GET | /auth/webauthn/:id/edit | webauthn#edit | Placeholder for editing stored credentials. Currently responds with HTTP 405. |
+| PUT | /auth/webauthn/:id | webauthn#update | Placeholder for updating stored credentials. Currently responds with HTTP 405. |
+| PATCH | /auth/webauthn/:id | webauthn#update | Placeholder for updating stored credentials. Currently responds with HTTP 405. |
+| DELETE | /auth/webauthn/:id | webauthn#destroy | Placeholder for deleting stored credentials. Currently responds with HTTP 405. |
