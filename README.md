@@ -241,7 +241,7 @@ Included Libraries
   - Test: `node --test libs/cookies/test.mjs`
 - SMTP — minimal TLS SMTP client using env config
   - Entry: `libs/smtp/index.js`
-  - Env: `BM_SMTP_HOST`, `BM_SMTP_PORT`, `BM_SMTP_USERNAME`, `BM_SMTP_PASSWORD`
+  - Env: `BM_SMTP_HOST`, `BM_SMTP_PORT`, `BM_SMTP_USERNAME`, `BM_SMTP_PASSWORD`, `BM_EMAIL_SENDER`
   - Test: `node --test libs/smtp/test.mjs`
 - Sessions — cookie‑backed sessions with SQLite store
   - Entry: `libs/session/index.js`

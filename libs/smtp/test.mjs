@@ -9,15 +9,18 @@ test('loadEnvConfig reads environment and supports overrides', () => {
     process.env.BM_SMTP_PORT = '465';
     process.env.BM_SMTP_USERNAME = 'user';
     process.env.BM_SMTP_PASSWORD = 'pass';
+    process.env.BM_EMAIL_SENDER = 'no-reply@example.com';
     const cfg = loadEnvConfig();
     assert.equal(cfg.host, 'smtp.example.com');
     assert.equal(cfg.port, 465);
     assert.equal(cfg.username, 'user');
     assert.equal(cfg.password, 'pass');
+    assert.equal(cfg.sender, 'no-reply@example.com');
 
-    const cfg2 = loadEnvConfig({ host: 'override.local', port: 2465 });
+    const cfg2 = loadEnvConfig({ host: 'override.local', port: 2465, sender: 'other@example.com' });
     assert.equal(cfg2.host, 'override.local');
     assert.equal(cfg2.port, 2465);
+    assert.equal(cfg2.sender, 'other@example.com');
   } finally {
     Object.assign(process.env, old);
   }
