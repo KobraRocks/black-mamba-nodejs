@@ -40,8 +40,8 @@ test('me#index includes booking dashboard link for guest', (t) => {
   const booking = payload.features.find((f) => f.key === 'booking');
   assert.ok(booking, 'booking feature present');
   const urls = booking.links.map((link) => link.url);
-  assert.ok(urls.includes('/event_bookings/management'));
-  assert.equal(urls.includes('/events/management'), false);
+  assert.ok(urls.includes('/booking/event_bookings/management'));
+  assert.equal(urls.includes('/booking/events/management'), false);
 });
 
 test('me#index promotes booker links when status upgraded', (t) => {
@@ -67,8 +67,8 @@ test('me#index promotes booker links when status upgraded', (t) => {
   const payload = Me.index(req);
   const booking = payload.features.find((f) => f.key === 'booking');
   const urls = booking.links.map((link) => link.url);
-  assert.ok(urls.includes('/event_bookings/management'));
-  assert.ok(urls.includes('/events/management'));
+  assert.ok(urls.includes('/booking/event_bookings/management'));
+  assert.ok(urls.includes('/booking/events/management'));
   assert.ok(urls.includes('/booking/management'));
   assert.equal(booking.role, 'booker');
 });

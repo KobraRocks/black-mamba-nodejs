@@ -13,6 +13,15 @@ function createPathPattern(route) {
   };
 }
 
+function normalizeRouteRoot(routeRoot) {
+  if (routeRoot == null) return '';
+  let root = String(routeRoot).trim();
+  if (!root) return '';
+  if (!root.startsWith('/')) root = `/${root}`;
+  root = root.replace(/\/+$/, '');
+  return root || '/';
+}
+
 export class Router {
   #store = new Map();
   #catalogPath = path.resolve(process.cwd(), 'route.catalog');
@@ -42,9 +51,22 @@ export class Router {
   register(controller) {
     const resources = controller.resources;
     const namespace = controller.namespace ? String(controller.namespace).toLowerCase() : '';
-    let root = namespace ? `/${namespace}/${resources}` : `/${resources}`;
+    const namespacePrefix = namespace ? `/${namespace}` : '';
+    const overrideRoot = normalizeRouteRoot(controller.routeRoot);
 
-    if (controller.belongs_to) {
+    let root;
+    if (overrideRoot) {
+      if (namespacePrefix && !overrideRoot.startsWith(namespacePrefix)) {
+        const suffix = overrideRoot === '/' ? '' : overrideRoot;
+        root = `${namespacePrefix}${suffix}` || namespacePrefix;
+      } else {
+        root = overrideRoot;
+      }
+    } else {
+      root = namespacePrefix ? `${namespacePrefix}/${resources}` : `/${resources}`;
+    }
+
+    if (!overrideRoot && controller.belongs_to) {
       const parent = controller.belongs_to; // name of parent resources
       const parentSingular = parent.endsWith('s') ? parent.slice(0, -1) : parent;
       root = `/${parent}/:${parentSingular}_id/${resources}`;

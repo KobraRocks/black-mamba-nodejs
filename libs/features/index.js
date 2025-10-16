@@ -98,11 +98,11 @@ function bookingFeatureDefinition(getModel) {
     if (!role && sessionStatus) role = sessionStatus;
     const normalized = resolveRole(role);
     const links = [
-      { label: 'Bookings dashboard', url: '/event_bookings/management' },
+      { label: 'Bookings dashboard', url: '/booking/event_bookings/management' },
     ];
     if (normalized === booker || normalized === admin) {
       links.push(
-        { label: 'Event types', url: '/events/management' },
+        { label: 'Event types', url: '/booking/events/management' },
         { label: 'Booking pages', url: '/booking/management' },
       );
     }

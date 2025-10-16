@@ -1,4 +1,4 @@
-import { ApplicationRecord } from './application.js';
+import { ApplicationRecord } from '../application.js';
 
 export class EventType extends ApplicationRecord {}
 

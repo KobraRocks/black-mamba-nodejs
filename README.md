@@ -59,6 +59,7 @@ BM_MIGRATE=1 npm start                 # explicitly run migrations, then start
 - `/booking/:public_id/:slug?month=current` returns the month view. Pass `month`/`year` query params to navigate.
 - `/booking/:public_id/:slug?month=MM&year=YYYY&day=DD` renders the slot picker for a day.
 - `/booking/:public_id/:slug/contact?...` shows the contact form; `POST`ing to the same path confirms the booking and emails ICS invites to both organizer and invitee.
+- Code lives under `controllers/booking/` with matching views in `views/booking/{booking,event_bookings,events}/` so future booking resource types can share the namespace.
 
 ### Super Admin Dashboard
 
@@ -137,6 +138,7 @@ export const AdminUsers = new class extends ApplicationController {
   resources = 'users'; // → /admin/users
 }();
 ```
+- Override the generated URL base with `routeRoot = '/desired/path'` to customize the segment after the namespace; namespaced controllers automatically prefix routes (e.g., booking controllers expose `/booking/...`).
 
 Custom Routes
 - Add entries to `custom_routes` as `[method, action, path]`

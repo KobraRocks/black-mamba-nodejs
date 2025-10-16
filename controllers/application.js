@@ -6,6 +6,7 @@ export class ApplicationController {
   namespace = "";              //default
   resources = "";              //default
   resource = "";               //default
+  routeRoot = null;             //default
   has_many = new Set();        //default
   belongs_to = null;           //default
   before_handlers = new Set(); //default "authenticate"

@@ -1,7 +1,7 @@
 export default function () {
   return `<!doctype html><html><head><meta charset="utf-8"><title>New Event</title></head><body>
   <h1>New Event Type</h1>
-  <form method="post" action="/events">
+  <form method="post" action="/booking/events">
     <label>Name <input name="name" required></label><br>
     <label>Slug <input name="slug" required></label><br>
     <label>Duration (min) <input name="duration_min" type="number" value="30" min="5"></label><br>

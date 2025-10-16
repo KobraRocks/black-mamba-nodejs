@@ -82,8 +82,8 @@ test('featuresForUser returns guest booking feature with dashboard link', () => 
   const booking = features[0];
   assert.equal(booking.role, 'guest');
   const urls = booking.links.map(link => link.url);
-  assert.ok(urls.includes('/event_bookings/management'));
-  assert.equal(urls.includes('/events/management'), false);
+  assert.ok(urls.includes('/booking/event_bookings/management'));
+  assert.equal(urls.includes('/booking/events/management'), false);
 });
 
 test('featuresForUser upgrades links for booker role', () => {
@@ -102,8 +102,8 @@ test('featuresForUser upgrades links for booker role', () => {
   assert.equal(features.length, 1);
   const booking = features[0];
   const urls = booking.links.map(link => link.url);
-  assert.ok(urls.includes('/event_bookings/management'));
-  assert.ok(urls.includes('/events/management'));
+  assert.ok(urls.includes('/booking/event_bookings/management'));
+  assert.ok(urls.includes('/booking/events/management'));
   assert.ok(urls.includes('/booking/management'));
   assert.equal(booking.role, 'booker');
 });

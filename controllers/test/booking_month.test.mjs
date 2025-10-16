@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Booking } from '../booking.js';
+import { Booking } from '../booking/pages.js';
 
 const pad = (value) => String(value).padStart(2, '0');
 

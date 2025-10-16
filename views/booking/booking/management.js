@@ -18,8 +18,8 @@ function formatEventSummary(eventTypes = []) {
 export default function bookingManagement({ assigns }) {
   const booker = assigns?.booker || {};
   const eventTypes = Array.isArray(assigns?.eventTypes) ? assigns.eventTypes : [];
-  const eventsUrl = escapeHtml(assigns?.eventsUrl || '/events/management');
-  const bookingsUrl = escapeHtml(assigns?.bookingsUrl || '/event_bookings/management');
+  const eventsUrl = escapeHtml(assigns?.eventsUrl || '/booking/events/management');
+  const bookingsUrl = escapeHtml(assigns?.bookingsUrl || '/booking/event_bookings/management');
   const email = escapeHtml(booker.email || '');
   const title = 'Booking Management';
 

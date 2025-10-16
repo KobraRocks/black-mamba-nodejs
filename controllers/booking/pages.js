@@ -1,6 +1,6 @@
-import { ApplicationController } from './application.js';
-import { generateDailySlots, fromUtc } from '../libs/booking/index.js';
-import { sendMail } from '../libs/smtp/index.js';
+import { ApplicationController } from '../application.js';
+import { generateDailySlots, fromUtc } from '../../libs/booking/index.js';
+import { sendMail } from '../../libs/smtp/index.js';
 
 const MONTHS = [
   'January','February','March','April','May','June','July','August','September','October','November','December'
@@ -64,7 +64,9 @@ async function deliver(message) {
 }
 
 export const Booking = new class extends ApplicationController {
+  namespace = 'booking';
   resources = 'booking';
+  routeRoot = '/booking';
 
   constructor() {
     super();
@@ -103,8 +105,8 @@ export const Booking = new class extends ApplicationController {
     return this.render('management', {
       booker: ctx.booker,
       eventTypes: ctx.eventTypes,
-      eventsUrl: '/events/management',
-      bookingsUrl: '/event_bookings/management',
+      eventsUrl: '/booking/events/management',
+      bookingsUrl: '/booking/event_bookings/management',
     });
   }
 

@@ -31,7 +31,7 @@ This document summarizes the HTTP routes that Black Mamba exposes. Run `npm star
 | PATCH | /auth/magic/:id | magic#update | Placeholder for updating a stored magic link configuration. Currently returns HTTP 405. |
 | DELETE | /auth/magic/:id | magic#destroy | Placeholder for deleting a stored magic link configuration. Currently returns HTTP 405. |
 
-## Booking Pages (`/booking`)
+## Booking Pages (`/booking`) — `controllers/booking/pages.js`
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
@@ -48,38 +48,38 @@ This document summarizes the HTTP routes that Black Mamba exposes. Run `npm star
 | PATCH | /booking/:id | booking#update | Placeholder for partially updating booking pages. Currently returns HTTP 405. |
 | DELETE | /booking/:id | booking#destroy | Placeholder for deleting booking pages. Currently returns HTTP 405. |
 
-## Event Bookings (`/event_bookings`)
+## Event Bookings (`/booking/event_bookings`) — `controllers/booking/event_bookings.js`
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /event_bookings/cancel | event_bookings#cancel | Self-service cancellation endpoint for invitees holding a signed cancel token. Link from emails. |
-| GET | /event_bookings/management | event_bookings#management | Organizer view showing upcoming bookings tied to their event types. Requires booker access. |
-| GET | /event_bookings | event_bookings#index | Lists bookings for the signed-in organizer; supports `event_type_id` filtering. Use for management UIs. |
-| GET | /event_bookings/new | event_bookings#new | Reserved for a booking creation form. Currently returns HTTP 405. |
-| POST | /event_bookings | event_bookings#create | API for creating bookings programmatically (used by booking flow). Expects event type and invitee details. |
-| GET | /event_bookings/:id | event_bookings#show | Placeholder for retrieving a single booking. Currently returns HTTP 405. |
-| GET | /event_bookings/:id/edit | event_bookings#edit | Placeholder for editing bookings via HTML. Currently returns HTTP 405. |
-| PUT | /event_bookings/:id | event_bookings#update | Organizer API for rescheduling or updating booking status; requires ownership. |
-| PATCH | /event_bookings/:id | event_bookings#update | Same as PUT but for partial updates. |
-| DELETE | /event_bookings/:id | event_bookings#destroy | Organizer API for cancelling bookings outright. |
+| GET | /booking/event_bookings/cancel | event_bookings#cancel | Self-service cancellation endpoint for invitees holding a signed cancel token. Link from emails. |
+| GET | /booking/event_bookings/management | event_bookings#management | Organizer view showing upcoming bookings tied to their event types. Requires booker access. |
+| GET | /booking/event_bookings | event_bookings#index | Lists bookings for the signed-in organizer; supports `event_type_id` filtering. Use for management UIs. |
+| GET | /booking/event_bookings/new | event_bookings#new | Reserved for a booking creation form. Currently returns HTTP 405. |
+| POST | /booking/event_bookings | event_bookings#create | API for creating bookings programmatically (used by booking flow). Expects event type and invitee details. |
+| GET | /booking/event_bookings/:id | event_bookings#show | Placeholder for retrieving a single booking. Currently returns HTTP 405. |
+| GET | /booking/event_bookings/:id/edit | event_bookings#edit | Placeholder for editing bookings via HTML. Currently returns HTTP 405. |
+| PUT | /booking/event_bookings/:id | event_bookings#update | Organizer API for rescheduling or updating booking status; requires ownership. |
+| PATCH | /booking/event_bookings/:id | event_bookings#update | Same as PUT but for partial updates. |
+| DELETE | /booking/event_bookings/:id | event_bookings#destroy | Organizer API for cancelling bookings outright. |
 
-## Event Types (`/events`)
+## Event Types (`/booking/events`) — `controllers/booking/event_types.js`
 
 | Method | Path | Controller#Action | Purpose & Usage |
 | --- | --- | --- | --- |
-| GET | /events/:id/slots | events#slots | Returns available UTC slots for a specific event type ID; use for organizer tools. |
-| GET | /events/s/:slug | events#show_slug | Fetches event type details by public slug; helpful when linking from booking pages. |
-| GET | /events/s/:slug/slots | events#slots_slug | Slot lookup by slug, mirroring `/events/:id/slots` for public contexts. |
-| POST | /events/:id/edit | events#update | HTML-friendly update endpoint that accepts form submissions from the edit view. |
-| GET | /events/management | events#management | Organizer management view listing their event types. Requires booker permissions. |
-| GET | /events | events#index | Lists event types; pass `?mine=1` to limit to the signed-in organizer. |
-| GET | /events/new | events#new | Renders the new event type form for organizers. |
-| POST | /events | events#create | Creates a new event type for the signed-in organizer and upgrades their role if needed. |
-| GET | /events/:id | events#show | Returns JSON for an event type by numeric ID. |
-| GET | /events/:id/edit | events#edit | Provides assigns for the edit view of an event type. |
-| PUT | /events/:id | events#update | API for updating an existing event type (JSON payload expected). |
-| PATCH | /events/:id | events#update | Partial update variant for event types. |
-| DELETE | /events/:id | events#destroy | Deletes an event type owned by the signed-in organizer. |
+| GET | /booking/events/:id/slots | events#slots | Returns available UTC slots for a specific event type ID; use for organizer tools. |
+| GET | /booking/events/s/:slug | events#show_slug | Fetches event type details by public slug; helpful when linking from booking pages. |
+| GET | /booking/events/s/:slug/slots | events#slots_slug | Slot lookup by slug, mirroring `/booking/events/:id/slots` for public contexts. |
+| POST | /booking/events/:id/edit | events#update | HTML-friendly update endpoint that accepts form submissions from the edit view. |
+| GET | /booking/events/management | events#management | Organizer management view listing their event types. Requires booker permissions. |
+| GET | /booking/events | events#index | Lists event types; pass `?mine=1` to limit to the signed-in organizer. |
+| GET | /booking/events/new | events#new | Renders the new event type form for organizers. |
+| POST | /booking/events | events#create | Creates a new event type for the signed-in organizer and upgrades their role if needed. |
+| GET | /booking/events/:id | events#show | Returns JSON for an event type by numeric ID. |
+| GET | /booking/events/:id/edit | events#edit | Provides assigns for the edit view of an event type. |
+| PUT | /booking/events/:id | events#update | API for updating an existing event type (JSON payload expected). |
+| PATCH | /booking/events/:id | events#update | Partial update variant for event types. |
+| DELETE | /booking/events/:id | events#destroy | Deletes an event type owned by the signed-in organizer. |
 
 ## Current User (`/me`)
 

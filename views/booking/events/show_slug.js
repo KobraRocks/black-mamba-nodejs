@@ -13,7 +13,7 @@ export default function ({ assigns }) {
         <select id="slots"></select>
       </label>
     </div>
-    <form id="book" method="post" action="/event_bookings">
+    <form id="book" method="post" action="/booking/event_bookings">
       <input type="hidden" name="event_type_id" value="${e.id}">
       <input type="hidden" name="start_iso" id="start_iso">
       <input type="hidden" name="time_zone" id="time_zone">
@@ -35,7 +35,7 @@ export default function ({ assigns }) {
       sel.innerHTML='';
       const params = new URLSearchParams({ date: date.value });
       if (tz.value) params.set('timeZone', tz.value);
-      const r = await fetch('/events/s/${esc(e.slug)}/slots?'+params.toString());
+      const r = await fetch('/booking/events/s/${esc(e.slug)}/slots?'+params.toString());
       const j = await r.json();
       const arr = Array.isArray(j.slots) ? j.slots : [];
       arr.forEach(s => { const o=document.createElement('option'); if (typeof s === 'string') { o.value=s; o.textContent=s; } else { o.value=s.utc; o.textContent=s.local || s.utc; } sel.appendChild(o); });
